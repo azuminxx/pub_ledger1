@@ -1,1 +1,36 @@
-あ
+{
+    "app": "8",
+    "scope": "ALL",
+    "desktop": {
+        "js": [
+            "v2/config.js",
+            "v2/utils.js",
+            "v2/background-process-monitor.js",
+            "v2/core.js",
+            "v2/modal-manager.js",
+            "v2/modal-add-record.js",
+            "v2/table-render.js",
+            "v2/auto-filter.js",
+            "v2/cell-swap.js",
+            "v2/cell-selection.js",
+            "v2/table-events.js",
+            "v2/table-pagination.js",
+            "v2/table-header.js",
+            "v2/table-integration.js"
+        ],
+        "css": [
+            "v2/table-base.css",
+            "v2/table-theme.css",
+            "v2/table-interaction.css",
+            "v2/auto-filter.css",
+            "v2/table-pagination.css",
+            "v2/table-components.css",
+            "v2/modal-ui.css",
+            "v2/modal-add-record.css"
+        ]
+    },
+    "mobile": {
+        "js": [],
+        "css": []
+    }
+}
