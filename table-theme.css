@@ -1,0 +1,424 @@
+/* =============================================================================
+   🎨 統合台帳システム v2 - テーマ・色彩スタイル
+   @description 台帳別色分け・ハイライトスタイル・ホバー効果
+   @version 2.0.0
+   ============================================================================= */
+
+/* =============================================================================
+   📊 テーブルハイライトスタイル - 一般的な変更管理配色
+   ============================================================================= */
+
+/* 🎯 行レベルの変更ハイライト（薄い緑色） */
+/* .row-modified {
+    background-color: #e8f5e8 !important; 
+} */
+
+/* 🎯 セルレベルの変更ハイライト - データプレビューと同じスタイル */
+td.cell-modified {
+    background-color: #fff3cd; /* 薄い黄色 - 個別セルの変更を表す */
+    border: 1px solid #ffeaa7; /* 薄いオレンジのボーダー */
+    box-shadow: none;
+    box-sizing: border-box;
+}   
+
+/* 🎯 セル内の入力要素は背景色のみ変更（ボーダーは通常と同じ） */
+td.cell-modified input,
+td.cell-modified select,
+td.cell-modified textarea {
+    background-color: #FFFFB3; /* ソフトイエローに変更 */
+    border: 1px solid #ccc; /* 通常のinput要素と同じボーダー */
+}
+
+/* 🎯 行内のセルも同じ薄い緑色に統一 */
+/* .row-modified td {
+    background-color: #e8f5e8 !important;
+} */
+
+/* 🎯 行レベルとセルレベル両方の場合は、セルレベルを優先 */
+/* パステルカラー対応 */
+/* .row-modified .cell-modified {
+    background-color: #FFFFB3 !important; 
+    border: 3px solid #C8E6C9 !important; 
+    box-shadow: inset 0 0 0 1px #FFFFB3 !important; 
+    box-sizing: border-box !important;
+} */
+
+.table-cell.cell-hidden-from-user.cell-modified {
+    border: none !important;
+}
+
+/* 🎯 行レベルとセルレベル両方の場合の入力要素 */
+/* .row-modified .cell-modified input,
+.row-modified .cell-modified select,
+.row-modified .cell-modified textarea {
+    background-color: #FFFFB3 !important; 
+    border: 1px solid #ccc !important; 
+} */
+
+/* 🔧 セル変更ハイライト：落ち着いたセージグリーンボーダーを最優先で適用 */
+/* table .cell-modified,
+table .row-modified .cell-modified,
+table .row-separated.row-modified .cell-modified,
+tr.row-editable td.cell-modified {
+    border: 3px solid #C8E6C9 !important; 
+} */
+
+/* 🔧 編集可能セル内の入力要素：ボーダーは継承（親セルの緑ボーダーを維持） */
+/* table .cell-modified input,
+table .cell-modified select,
+table .cell-modified textarea,
+table .row-modified .cell-modified input,
+table .row-modified .cell-modified select,
+table .row-modified .cell-modified textarea,
+table .row-separated.row-modified .cell-modified input,
+table .row-separated.row-modified .cell-modified select,
+table .row-separated.row-modified .cell-modified textarea {
+    border: none !important; 
+    outline: none !important;
+    box-shadow: none !important;
+} */
+
+/* 🔧 フォーカス時も通常のinput要素と同じスタイル */
+/* table .cell-modified input:focus,
+table .cell-modified select:focus,
+table .cell-modified textarea:focus,
+table .row-modified .cell-modified input:focus,
+table .row-modified .cell-modified select:focus,
+table .row-modified .cell-modified textarea:focus,
+table .row-separated.row-modified .cell-modified input:focus,
+table .row-separated.row-modified .cell-modified select:focus,
+table .row-separated.row-modified .cell-modified textarea:focus {
+    border: 1px solid #ccc !important; 
+    outline: none !important;
+} */
+
+/* =============================================================================
+   📋 テーブル基本スタイル - プロフェッショナルデザイン
+   ============================================================================= */
+
+/* ホバー効果は table-base.css で統一的に処理 */
+/* #my-table tbody tr:hover:not(.table-header){
+    box-shadow: none !important;
+    background: #e3f2fd !important;
+} */
+
+/* 🎨 分離された行（特別な背景色を維持） - パステルカラー対応 */
+/* .row-separated {
+    background-color: #FFFFB3;
+} */
+
+/* 🎨 変更ハイライトは分離ハイライトより優先される */
+/* .row-separated.row-modified {
+    background-color: #e8f5e8;
+} */
+
+/* .row-separated.row-modified td {
+    background-color: #e8f5e8;
+} */
+
+/* 🎯 ★ 重要：分離行でもセルレベルハイライトを優先させる */
+/* .row-separated.row-modified .cell-modified,
+.row-separated.row-modified td.cell-modified {
+    background-color: #FFFFB3 !important;
+    border: 2px solid #C8E6C9 !important; 
+    box-shadow: inset 0 0 0 1px #FFFFB3 !important; 
+} */
+
+/* 🎯 ★ 分離行のセルレベルハイライト内の入力要素 */
+/* .row-separated.row-modified .cell-modified input,
+.row-separated.row-modified .cell-modified select,
+.row-separated.row-modified .cell-modified textarea,
+.row-separated.row-modified td.cell-modified input,
+.row-separated.row-modified td.cell-modified select,
+.row-separated.row-modified td.cell-modified textarea {
+    background-color: #FFFFB3 !important;
+    border: 1px solid #ccc !important;
+    outline: none !important; 
+} */
+
+/* 🎯 ★ 分離行のセルレベルハイライトのフォーカス時制御 */
+/* .row-separated.row-modified .cell-modified input:focus,
+.row-separated.row-modified .cell-modified select:focus,
+.row-separated.row-modified .cell-modified textarea:focus,
+.row-separated.row-modified td.cell-modified input:focus,
+.row-separated.row-modified td.cell-modified select:focus,
+.row-separated.row-modified td.cell-modified textarea:focus {
+    border: 1px solid #ccc !important; 
+    outline: none !important; 
+} */
+
+/* =============================================================================
+   🎨 台帳別色分け・フィールド特性
+   ============================================================================= */
+
+/* 🎨 台帳別色分け - 背景色と左ボーダーで統合 */
+/* この部分は下部の台帳別セル背景色セクションに統合されました */
+
+/* 🎨 主キーフィールド - 軽量化 */
+/* td[data-is-primary-key="true"] {
+    font-weight: 600;
+    background-color: rgba(255,245,157,0.1);
+} */
+
+/* 🎨 レコードIDフィールド - 軽量化 */
+td[data-is-record-id="true"] {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: #666;
+    text-align: center;
+}
+
+/* =============================================================================
+   🎨 台帳別ヘッダー背景色
+   ============================================================================= */
+
+/* 🎨 基本ヘッダーセル - v2/table-base.cssで定義済みのため削除 */
+
+/* 🎨 ヘッダーラベル - 画像と同じスタイル */
+.header-label {
+    font-weight: 600;
+    margin-bottom: 1px;
+    text-align: center;
+    line-height: 1.2;
+    font-size: 14px;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 🎨 台帳別ヘッダー背景色 - データプレビューと同じ（統一グレー） */
+/* 台帳別の色分けを無効化し、すべて統一されたグレーグラデーションを使用 */
+.header-seat,
+.header-pc,
+.header-ext,
+.header-user,
+.header-common {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%) !important;
+    color: #555 !important;
+}
+
+/* =============================================================================
+   🎨 縞模様とベース背景色
+   ============================================================================= */
+
+/* 🎨 基本背景色 */
+.bg-white {
+    background-color: #ffffff;
+}
+
+.bg-light-gray {
+    background-color: #f5f5f5;
+}
+
+.bg-medium-gray {
+    background-color: #f0f0f0;
+}
+
+/* 🎨 特殊背景色 - パステルカラー対応 */
+.bg-highlight-yellow {
+    background-color: #FFFFB3; /* ソフトイエローに変更 */
+}
+
+.bg-success-light {
+    background-color: #C8E6C9; /* 落ち着いたセージグリーンに変更 */
+}
+
+.bg-modified-light {
+    background-color: #FFE4B3; /* ソフトオレンジに変更 */
+}
+
+/* =============================================================================
+   🎨 特殊セルスタイル
+   ============================================================================= */
+
+/* 🔗 行番号セルスタイル - データプレビューと同じ */
+.row-number-cell {
+    width: 50px;
+    text-align: center;
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #666;
+    font-size: 12px;
+}
+
+/* 🔗 行番号ヘッダースタイル - データプレビューと同じ */
+.row-number-header {
+    width: 50px;
+    text-align: center;
+    background: linear-gradient(135deg, #e8e8e8 0%, #d5d5d5 100%);
+    font-weight: 700;
+}
+
+/* ✅ 変更チェックボックスセル - 閲覧モードと同じサイズ */
+.modification-checkbox-cell {
+    text-align: center;
+    vertical-align: middle;
+    border: 1px solid #ddd; /* 閲覧モードと同じボーダー色 */
+    padding: 4px 6px; /* 閲覧モードと同じコンパクトなパディング */
+    user-select: none;
+    width: 40px; /* 閲覧モードと同じ幅 */
+    min-width: 40px;
+    max-width: 40px;
+    height: 28px; /* 閲覧モードと同じ高さ */
+    box-sizing: border-box;
+    overflow: hidden;
+    line-height: normal;
+}
+
+/* ✅ チェックボックス自体のスタイル */
+.modification-checkbox {
+    margin: 0;
+    padding: 0;
+    width: 12px;
+    height: 12px;
+    cursor: pointer;
+    vertical-align: middle;
+    position: relative;
+    top: 1px;
+    box-sizing: border-box;
+    border: 1px solid #ddd; /* 閲覧モードと同じボーダー */
+    border-radius: 2px; /* 少し角を丸く */
+}
+
+/* =============================================================================
+   🎯 隠し・その他状態スタイル
+   ============================================================================= */
+
+/* 🎯 隠し行スタイル - 使用頻度が低いためコメントアウト */
+/* .row-hidden-preview {
+    background-color: #f0f0f0;
+} */
+
+/* 🎯 隠し行のテキスト色 - 使用頻度が低いためコメントアウト */
+/* .text-muted {
+    color: #757575;
+} */
+
+/* 🎯 ヘッダー編集モード - 使用頻度が低いためコメントアウト */
+/* .header-editing {
+    background-color: #f0f0f0;
+} */
+
+/* 🎯 リサイズハンドル - パステルカラー対応 */
+.resize-handle-active {
+    background-color: rgba(179, 217, 255, 0.4); /* ソフトブルーに変更 */
+}
+
+.resize-handle-inactive {
+    background-color: transparent;
+}
+
+/* =============================================================================
+   🎨 台帳別セル背景色（薄い色）
+   ============================================================================= */
+
+/* 🎨 台帳別セル背景色 - データプレビューと同じ（統一スタイル） */
+/* 台帳別の色分けを無効化し、データプレビューと同じシンプルなスタイルを使用 */
+/* td[data-source-app="SEAT"],
+td[data-source-app="PC"],
+td[data-source-app="EXT"],
+td[data-source-app="USER"],
+td[data-source-app="COMMON"] {
+    background-color: transparent !important;
+    border-left: none !important;
+} */
+
+/* =============================================================================
+   🎨 編集モード時の背景色調整
+   ============================================================================= */
+
+/* 編集モード時の入力要素の背景色 - データプレビューと同じ（統一スタイル） */
+/* 台帳別の色分けを無効化し、統一されたスタイルを使用 */
+/* .edit-mode-active td[data-source-app] input,
+.edit-mode-active td[data-source-app] select,
+.edit-mode-active td[data-source-app] textarea {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid #ddd !important;
+} */
+
+/* =============================================================================
+   🎨 ホバー効果の調整
+   ============================================================================= */
+
+/* ホバー時の背景色を台帳色に合わせて調整 */
+/* td[data-source-app="SEAT"]:hover {
+    background-color: rgba(39, 174, 96, 0.12) !important;
+}
+
+td[data-source-app="PC"]:hover {
+    background-color: rgba(52, 152, 219, 0.12) !important;
+}
+
+td[data-source-app="EXT"]:hover {
+    background-color: rgba(228, 76, 60, 0.12) !important;
+}
+
+td[data-source-app="USER"]:hover {
+    background-color: rgba(243, 156, 18, 0.12) !important;
+}
+
+td[data-source-app="COMMON"]:hover {
+    background-color: rgba(52, 73, 94, 0.08) !important;
+} */
+
+/* =============================================================================
+   🎨 変更セルの台帳別色分け
+   ============================================================================= */
+
+/* 変更されたセルも台帳色に合わせて調整 */
+/* td[data-source-app="SEAT"].cell-modified {
+    background-color: rgba(39, 174, 96, 0.15) !important;
+    border: 1px solid rgba(39, 174, 96, 0.4) !important;
+}
+
+td[data-source-app="PC"].cell-modified {
+    background-color: rgba(52, 152, 219, 0.15) !important;
+    border: 1px solid rgba(52, 152, 219, 0.4) !important;
+}
+
+td[data-source-app="EXT"].cell-modified {
+    background-color: rgba(228, 76, 60, 0.15) !important;
+    border: 1px solid rgba(228, 76, 60, 0.4) !important;
+}
+
+td[data-source-app="USER"].cell-modified {
+    background-color: rgba(243, 156, 18, 0.15) !important;
+    border: 1px solid rgba(243, 156, 18, 0.4) !important;
+}
+
+td[data-source-app="COMMON"].cell-modified {
+    background-color: rgba(52, 73, 94, 0.12) !important;
+    border: 1px solid rgba(52, 73, 94, 0.4) !important;
+} */
+
+/* =============================================================================
+   🎯 .cell-unlinked-ledger の優先順位を最高位に設定
+   ============================================================================= */
+
+/* 台帳別色分けより優先して適用されるようにより詳細度の高いセレクタを使用 */
+td[data-source-app].cell-unlinked-ledger {
+    background-color: #E5E5E5  !important;
+}
+
+/* ホバー時も灰色を維持 */
+/* td[data-source-app].cell-unlinked-ledger:hover,
+td.cell-unlinked-ledger:hover {
+    background-color: #C3C3C3 !important; 
+} */
+
+/* 変更されたセルでも灰色を維持 */
+td[data-source-app].cell-unlinked-ledger.cell-modified,
+td.cell-unlinked-ledger.cell-modified {
+    background-color: #E5E5E5 !important; /* 変更時は少し明るい灰色 */
+}
+
+/* 編集モード時の入力要素も灰色系に */
+.edit-mode-active td[data-source-app].cell-unlinked-ledger input,
+.edit-mode-active td[data-source-app].cell-unlinked-ledger select,
+.edit-mode-active td[data-source-app].cell-unlinked-ledger textarea,
+.edit-mode-active td.cell-unlinked-ledger input,
+.edit-mode-active td.cell-unlinked-ledger select,
+.edit-mode-active td.cell-unlinked-ledger textarea {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+} 

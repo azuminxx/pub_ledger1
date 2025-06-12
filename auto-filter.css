@@ -1,0 +1,480 @@
+/* =============================================================================
+   🔍 オートフィルタ機能 v2 - CSS
+   @description テーブルのオートフィルタ機能のスタイル定義
+   @version 2.0.0
+   ============================================================================= */
+
+/* =============================================================================
+   🔍 フィルタボタン
+   ============================================================================= */
+
+.auto-filter-button {
+    position: absolute;
+    bottom: 20px;
+    right: 1px;
+    width: 20px;
+    height: 18px;
+    background: white;
+    color: #333;
+    border: 1px solid #666;
+    font-size: 9px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 16px;
+    border-radius: 8px;
+    z-index: 15;
+    transition: all 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    text-shadow: none;
+}
+
+/* sticky positioningを使用するヘッダーセル内でのボタン配置 */
+.table-header .auto-filter-button {
+    position: absolute !important;
+    bottom: 20px !important;
+    right: 1px !important;
+    z-index: 110 !important; /* ヘッダーより前面に */
+}
+
+/* フィルターボタンがあるヘッダーセルのスタイリング */
+.table-header.has-filter-button {
+    position: relative !important;
+}
+
+/* フィルターボタンがあるヘッダーセルでもsticky positioningを維持 */
+.filter-row .table-header.has-filter-button {
+    position: sticky !important;
+    top: 83px !important; /* kintoneヘッダー(48px) + カテゴリー行(35px) */
+    z-index: 101 !important;
+}
+
+.auto-filter-button:hover {
+    background: #f5f5f5;
+    color: #222;
+    border-color: #555;
+    transform: scale(1.05) translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.auto-filter-button:active {
+    background: #e0e0e0;
+    color: #111;
+    border-color: #444;
+    transform: scale(0.95);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* アクティブなフィルタボタン */
+.auto-filter-button.active-filter {
+    background: #2196F3;
+    color: white;
+    border-color: #1976D2;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(33, 150, 243, 0.4);
+    transform: scale(1.02);
+}
+
+/* =============================================================================
+   🔍 フィルタドロップダウン
+   ============================================================================= */
+
+.filter-dropdown {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    min-width: 280px;
+    max-width: 350px;
+    max-height: 60vh;
+    overflow: hidden;
+    z-index: 1000;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: filterDropdownFadeIn 0.2s ease-out;
+    transition: box-shadow 0.2s ease;
+}
+
+/* ドラッグ中のモーダル全体のスタイル */
+.filter-dropdown.dragging {
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+    transform: rotate(1deg);
+    z-index: 1001;
+}
+
+@keyframes filterDropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ドロップダウンヘッダー */
+.filter-header {
+    padding: 16px;
+    border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    font-weight: 600;
+    font-size: 16px;
+    color: white;
+    border-radius: 12px 12px 0 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    cursor: move; /* ドラッグ可能であることを示すカーソル */
+    user-select: none; /* テキスト選択を無効化 */
+    position: relative;
+}
+
+/* ドラッグ中のスタイル */
+.filter-header:active {
+    cursor: grabbing;
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+}
+
+/* ドラッグハンドルアイコンを追加 */
+.filter-header::before {
+    content: "⋮⋮";
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.7;
+    letter-spacing: -2px;
+}
+
+.filter-icon {
+    margin-right: 8px;
+}
+
+/* 🔍 検索入力ボックス部分 */
+.filter-search-container {
+    padding: 12px;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-search-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.filter-search-input:focus {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.filter-clear-button {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    color: #666;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.filter-clear-button:hover {
+    background: #f5f5f5;
+    color: #333;
+    border-color: #bbb;
+}
+
+.filter-clear-button:active {
+    background: #e0e0e0;
+    transform: scale(0.95);
+}
+
+/* フィルタドロップダウンのコントロール部分 */
+.filter-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 8px;
+}
+
+/* 左側ボタングループ */
+.filter-left-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* 右側ボタングループ */
+.filter-right-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* フィルタボタンの共通スタイル */
+.filter-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* アウトラインボタン（すべて選択・すべて解除） */
+.filter-btn-outline {
+    background-color: white;
+    color: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.filter-btn-outline:hover {
+    background-color: #f1f8e9;
+    border-color: #388e3c;
+    color: #388e3c;
+}
+
+/* プライマリボタン（OK） */
+.filter-btn-primary {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+.filter-btn-primary:hover {
+    background-color: #388e3c;
+    border-color: #388e3c;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+/* セカンダリボタン（キャンセル） */
+.filter-btn-secondary {
+    background-color: #f5f5f5;
+    color: #666;
+    border-color: #ddd;
+}
+
+.filter-btn-secondary:hover {
+    background-color: #e0e0e0;
+    border-color: #bbb;
+    color: #333;
+}
+
+/* =============================================================================
+   🔍 値一覧
+   ============================================================================= */
+
+.filter-value-list {
+    padding: 8px;
+    max-height: 35vh;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border-radius: 0 0 12px 12px;
+}
+
+/* スクロールバーのスタイリング */
+.filter-value-list::-webkit-scrollbar {
+    width: 16px;
+}
+
+.filter-value-list::-webkit-scrollbar-track {
+    background: #e3f2fd;
+    border-radius: 8px;
+    border: 1px solid #bbdefb;
+}
+
+.filter-value-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    border-radius: 8px;
+    border: 2px solid #e3f2fd;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.filter-value-list::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    box-shadow: 0 3px 6px rgba(33, 150, 243, 0.4);
+}
+
+.filter-value-list::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(135deg, #1565C0, #0D47A1);
+}
+
+/* 値アイテム */
+.filter-value-list > div {
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 1px 0;
+    transition: all 0.15s ease;
+    position: relative;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.filter-value-list > div:hover {
+    background-color: #e3f2fd !important;
+    transform: translateX(2px);
+}
+
+.filter-value-list > div:active {
+    background-color: #bbdefb !important;
+}
+
+/* チェックボックス */
+.filter-value-list input[type="checkbox"] {
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    appearance: none;
+    background-color: white;
+    border: 2px solid #2196F3;
+    border-radius: 3px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.filter-value-list input[type="checkbox"]:checked {
+    background-color: #2196F3;
+    border-color: #2196F3;
+}
+
+.filter-value-list input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: -1px;
+    left: 2px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 14px;
+}
+
+.filter-value-list input[type="checkbox"]:hover {
+    border-color: #1976D2;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+/* ラベルテキスト */
+.filter-value-list span {
+    font-size: 12px;
+    color: #1a1a1a;
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 空白値の特別表示 */
+.filter-value-list span[style*="(空白)"] {
+    font-style: italic;
+    color: #424242;
+}
+
+/* =============================================================================
+   🔍 レスポンシブ対応
+   ============================================================================= */
+
+@media (max-width: 468px) {
+    .filter-dropdown {
+        min-width: 180px;
+        max-height: 300px;
+        font-size: 11px;
+    }
+    
+    .auto-filter-button {
+        width: 16px;
+        height: 14px;
+        font-size: 7px;
+        right: 6px;
+        bottom: 2px;
+    }
+    
+    .filter-value-list {
+        max-height: 130px;
+    }
+}
+
+/* =============================================================================
+   🔍 アクセシビリティ
+   ============================================================================= */
+
+.auto-filter-button:focus {
+    outline: 2px solid #007acc;
+    outline-offset: 2px;
+}
+
+.filter-dropdown button:focus {
+    outline: 2px solid #007acc;
+    outline-offset: 1px;
+}
+
+.filter-value-list input[type="checkbox"]:focus {
+    outline: 2px solid #007acc;
+    outline-offset: 1px;
+}
+
+/* ハイコントラストモード対応 */
+@media (prefers-contrast: high) {
+    .auto-filter-button {
+        border-width: 2px;
+    }
+    
+    .filter-dropdown {
+        border-width: 2px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+    
+    .filter-value-list > div:hover {
+        background-color: #0066cc !important;
+        color: white;
+    }
+}
+
+/* ダークモード対応（将来的な拡張） */
+@media (prefers-color-scheme: blue) {
+    .filter-dropdown {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .filter-header {
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+        color: #e2e8f0;
+        border-bottom-color: #4a5568;
+    }
+    
+    .filter-dropdown button {
+        background-color: #4a5568;
+        border-color: #718096;
+        color: #e2e8f0;
+    }
+    
+    .filter-value-list span {
+        color: #434343;
+    }
+} 

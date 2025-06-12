@@ -1,0 +1,197 @@
+/* =============================================================================
+   📄 統合台帳システム v2 - ページネーションスタイル
+   @description ページネーションUI・コントロールボタン・レスポンシブページング
+   @version 2.0.0
+   ============================================================================= */
+
+/* =============================================================================
+   📄 ページネーションスタイル
+   ============================================================================= */
+
+/* 🎨 ページネーションコンテナ */
+.pagination-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin: 15px 0;
+    padding: 15px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 🎨 ページネーション情報 */
+.pagination-info {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.pagination-summary {
+    font-size: 14px;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.record-range {
+    font-weight: 600;
+    color: #2c3e50;
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.record-total {
+    color: #6c757d;
+    margin: 0 10px;
+}
+
+.page-info {
+    font-weight: 500;
+    color: #495057;
+    background: rgba(52,152,219,0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.filter-status {
+    font-size: 12px;
+    color: #856404;
+    background: rgba(255,193,7,0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border-left: 3px solid #ffc107;
+    margin-top: 5px;
+}
+
+/* 🎨 ページネーションコントロール */
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-btn {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.pagination-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.pagination-btn:disabled {
+    background: #f8f9fa;
+    color: #adb5bd;
+    cursor: not-allowed;
+    border-color: #e9ecef;
+    box-shadow: none;
+}
+
+/* 🎨 ページ番号ボタン */
+.page-numbers {
+    display: flex;
+    gap: 4px;
+}
+
+.page-number-btn {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    text-align: center;
+}
+
+.page-number-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    border-color: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(52,152,219,0.3);
+}
+
+.page-number-btn.active {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    border-color: #2980b9;
+    cursor: default;
+    box-shadow: 0 2px 6px rgba(52,152,219,0.3);
+}
+
+.page-number-btn:disabled {
+    background: #f8f9fa;
+    color: #adb5bd;
+    cursor: not-allowed;
+    border-color: #e9ecef;
+    box-shadow: none;
+}
+
+/* 🎨 ページジャンプ */
+.page-jump {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#page-jump-input {
+    width: 80px;
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 12px;
+    text-align: center;
+    background: white;
+    transition: border-color 0.2s ease;
+}
+
+#page-jump-input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52,152,219,0.2);
+}
+
+/* 🎨 レスポンシブ対応 */
+@media (max-width: 768px) {
+    .pagination-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .pagination-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .page-numbers {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+} 

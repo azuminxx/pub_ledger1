@@ -1,0 +1,271 @@
+/* =============================================================================
+   🎛️ 統合台帳システム v2 - コンポーネントスタイル
+   @description ボタンスタイル・入力要素スタイル・ローディング・メッセージ
+   @version 2.0.0
+   ============================================================================= */
+
+/* =============================================================================
+   🎛️ フォーム要素スタイル
+   ============================================================================= */
+
+/* 📝 基本入力フィールド */
+.table-input {
+    padding: 1px;
+    margin: 0;
+    font-size: 11px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+}
+
+/* 📋 基本セレクトボックス */
+.table-select {
+    padding: 1px;
+    margin: 0;
+    font-size: 11px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+}
+
+.table-select option {
+    font-size: 11px;
+}
+
+/* 🔢 幅指定フォーム要素 */
+.input-width-68 { width: calc(68px); min-width: calc(68px); max-width: calc(68px); }
+.input-width-78 { width: calc(78px); min-width: calc(78px); max-width: calc(78px); }
+.input-width-98 { width: calc(98px); min-width: calc(98px); max-width: calc(98px); }
+
+/* 🎨 フィルター入力欄 - 軽量化 */
+.filter-input {
+    width: 95%;
+    font-size: 10px;
+    padding: 1px 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 3px;
+    background: white;
+    color: #2c3e50;
+    font-family: inherit;
+    box-sizing: border-box;
+    margin-top: 4px;
+    height: 24px;   
+}
+
+.filter-input:focus {
+    border-color: #3498db;
+}
+
+/* 🎨 フィルターセレクトボックス専用スタイル */
+select.filter-input {
+    cursor: pointer;
+    appearance: none; /* デフォルトの矢印を非表示 */
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23666' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 8px;
+    padding-right: 20px; /* 矢印のスペース確保 */
+}
+
+/* =============================================================================
+   🔘 ボタンスタイル
+   ============================================================================= */
+
+/* 👁️ 非表示ボタン */
+.hide-button {
+    width: 28px;
+    height: 22px;
+    padding: 0;
+    margin: 1px;
+    font-size: 11px;
+    border: 1px solid #e0e0e0;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: #757575;
+    transition: all 0.2s ease;
+}
+
+.hide-button:hover {
+    background-color: #f0f0f0;
+    border-color: #bdbdbd;
+    color: #424242;
+}
+
+/* ↗️ 分離ボタン（旧クラス名との互換性） */
+.separate-button {
+    font-size: 10px;
+    padding: 1px 4px;
+    margin-left: 4px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease;
+}
+
+.separate-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* 🎨 ボタン */
+.retry-button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* =============================================================================
+   📊 テーブル本体・メッセージ用スタイル
+   ============================================================================= */
+
+/* 🎨 初期メッセージセル */
+.initial-message-cell {
+    text-align: center;
+    padding: 40px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* 🎨 メッセージタイトル */
+.message-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+.message-subtitle {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: #7f8c8d;
+}
+
+.message-hint {
+    font-size: 12px;
+    color: #95a5a6;
+}
+
+/* 🎨 エラーメッセージ */
+.error-message-cell {
+    text-align: center;
+    padding: 40px;
+    color: #e74c3c;
+}
+
+.error-title {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.error-description {
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.error-hint {
+    font-size: 11px;
+    color: #95a5a6;
+}
+
+/* 🎨 ローディングメッセージ */
+.loading-message-cell {
+    text-align: center;
+    padding: 40px;
+}
+
+.loading-search-cell {
+    text-align: center;
+    padding: 30px;
+}
+
+.loading-title {
+    font-size: 16px;
+    color: #3498db;
+}
+
+.loading-search-title {
+    font-size: 16px;
+    color: #3498db;
+    margin-bottom: 15px;
+}
+
+.loading-subtitle {
+    margin-top: 15px;
+}
+
+.loading-condition {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-bottom: 15px;
+}
+
+/* 🎨 スピナー */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+.loading-spinner-small {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* =============================================================================
+   📝 説明コメント
+   ============================================================================= */
+
+/*
+使用方法:
+1. 行に変更があった場合: <tr class="row-modified">
+2. セルに変更があった場合: <td class="cell-modified">  
+3. ドラッグ中の行: <tr class="row-dragging">
+4. ドロップターゲット: <tr class="drop-target-top"> または <tr class="drop-target-bottom">
+5. セル選択: <td class="cell-selected">
+6. ドラッグオーバー: <td class="cell-drag-over">
+7. 縞模様: 未実装（削除済み）
+8. 分離行: <tr class="row-separated">
+9. 基本セル: <td class="table-cell cell-width-100">
+10. ドラッグ可能セル: <td class="table-cell cell-draggable cell-width-100">
+11. フォーム要素: <input class="table-input input-width-98">
+12. ボタン: <button class="hide-button">、<button class="separate-button">
+
+色の説明:
+- #e8f5e8: 薄い緑色（行レベル変更） - 一般的な「成功・変更」カラー
+- #fff3cd: 黄色（セルレベル変更） - 一般的な「警告・変更」カラー
+- #ffffff: 白（偶数行）
+- #f5f5f5: 薄いグレー（奇数行）
+- #fff8e1: 薄い黄色（分離行）
+
+この配色は以下の利点があります：
+- GitHubやVSCodeなどで使われる一般的な配色
+- アクセシビリティに配慮（十分なコントラスト）
+- 直感的（緑=成功・変更、黄=警告・注意）
+
+CSS化のメリット：
+- DOMサイズの削減（インラインスタイル削除）
+- 保守性の向上（スタイルの一元管理）
+- パフォーマンスの向上（CSS再利用）
+- キャッシュ効果
+*/ 

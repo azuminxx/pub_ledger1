@@ -1,0 +1,522 @@
+/* =============================================================================
+   🆕 新規レコード追加モーダル - CSS
+   @description ガイド付き新規レコード追加ダイアログのスタイル
+   @version 1.0.0
+   ============================================================================= */
+
+/* =============================================================================
+   📦 モーダル基本構造
+   ============================================================================= */
+
+.add-record-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.add-record-overlay {
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.add-record-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* =============================================================================
+   📝 ヘッダー
+   ============================================================================= */
+
+.add-record-header {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.add-record-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.add-record-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.add-record-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* =============================================================================
+   📊 プログレス表示
+   ============================================================================= */
+
+.add-record-progress {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0;
+}
+
+.progress-step {
+    flex: 1;
+    padding: 15px 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-right: 1px solid #e9ecef;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.progress-step:last-child {
+    border-right: none;
+}
+
+.progress-step.active {
+    background: #4CAF50;
+    color: white;
+    font-weight: 600;
+}
+
+.progress-step.completed {
+    background: #28a745;
+    color: white;
+}
+
+.progress-step.completed::after {
+    content: '✓';
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+/* =============================================================================
+   📄 ボディコンテンツ
+   ============================================================================= */
+
+.add-record-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.add-record-content {
+    flex: 1;
+    padding: 0;
+}
+
+.step-content {
+    padding: 30px;
+}
+
+.step-content h3 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.step-description {
+    margin: 0 0 20px 0;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* =============================================================================
+   🎯 台帳選択オプション
+   ============================================================================= */
+
+.ledger-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.ledger-option {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: block;
+}
+
+.ledger-option:hover {
+    border-color: #4CAF50;
+    background: #f8fff8;
+}
+
+.ledger-option input[type="radio"] {
+    display: none;
+}
+
+.ledger-option input[type="radio"]:checked + .option-content {
+    color: #4CAF50;
+}
+
+.ledger-option input[type="radio"]:checked {
+    background: #4CAF50;
+}
+
+.ledger-option:has(input:checked) {
+    border-color: #4CAF50;
+    background: #f8fff8;
+}
+
+.option-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.option-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.option-info {
+    flex: 1;
+}
+
+.option-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.option-desc {
+    font-size: 13px;
+    color: #666;
+}
+
+/* =============================================================================
+   📝 フォーム要素
+   ============================================================================= */
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+/* 横並び表示のスタイル */
+.form-group.horizontal {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.form-group.horizontal label {
+    flex-shrink: 0;
+    min-width: 120px;
+    margin-bottom: 0;
+    padding-top: 12px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group.horizontal .form-input-container {
+    flex: 1;
+}
+
+.form-group.horizontal .form-input-container .form-input {
+    width: 100%;
+}
+
+.form-group.horizontal .form-input-container .field-hint {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+.form-group.required label::after {
+    content: ' *';
+    color: #dc3545;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.required-mark {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.field-hint {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+/* =============================================================================
+   ✅ 確認画面
+   ============================================================================= */
+
+.confirmation-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.summary-section h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.summary-content {
+    display: grid;
+    gap: 10px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-key {
+    font-weight: 500;
+    color: #666;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.confirmation-note {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.confirmation-note p {
+    margin: 0;
+    color: #856404;
+}
+
+/* =============================================================================
+   🎯 結果表示
+   ============================================================================= */
+
+.step-content.success,
+.step-content.error {
+    text-align: center;
+    padding: 40px 30px;
+}
+
+.success-icon,
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.step-content.success h3 {
+    color: #28a745;
+    margin-bottom: 15px;
+}
+
+.step-content.error h3 {
+    color: #dc3545;
+    margin-bottom: 15px;
+}
+
+.error-details {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.error-details code {
+    color: #dc3545;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+.success-actions,
+.error-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+/* =============================================================================
+   🔘 フッターボタン
+   ============================================================================= */
+
+.add-record-footer {
+    padding: 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.btn-primary {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* =============================================================================
+   📱 レスポンシブ対応
+   ============================================================================= */
+
+@media (max-width: 768px) {
+    .add-record-overlay {
+        padding: 10px;
+    }
+    
+    .add-record-container {
+        max-height: 95vh;
+    }
+    
+    .add-record-progress {
+        flex-direction: column;
+    }
+    
+    .progress-step {
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .progress-step:last-child {
+        border-bottom: none;
+    }
+    
+    .ledger-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .step-content {
+        padding: 20px;
+    }
+    
+    .add-record-footer {
+        flex-direction: column;
+    }
+    
+    .success-actions,
+    .error-actions {
+        flex-direction: column;
+    }
+    
+    /* 小さい画面では横並びを縦並びに変更 */
+    .form-group.horizontal {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .form-group.horizontal label {
+        min-width: auto;
+        padding-top: 0;
+        margin-bottom: 8px;
+    }
+} 

@@ -1,0 +1,376 @@
+/* =============================================================================
+   🎯 統合台帳システム v2 - インタラクション・操作スタイル
+   @description 編集モード制御・ドラッグ&ドロップ・セル選択スタイル
+   @version 2.0.0
+   ============================================================================= */
+
+/* =============================================================================
+   🎨 CSS カスタムプロパティ（変数定義）
+   ============================================================================= */
+:root {
+    --border-color-default: #e0e0e0;
+    --border-color-hover: #bbb;
+    --border-color-focus: #2196f3;
+    --border-color-selected: #22c55e;
+    --border-color-orange: #ff9800;
+    --border-color-red: #f44336;
+    --border-color-blue: #3498db;
+    
+    --bg-white: #ffffff;
+    --bg-light-gray: #fafafa;
+    --bg-disabled: #f5f5f5;
+    --bg-orange-light: #fff3e0;
+    --bg-orange-lighter: #ffe0b2;
+    --bg-blue-light: #e3f2fd;
+    --bg-hover: rgba(0, 0, 0, 0.02);
+    
+    --text-color-default: #333;
+    --text-color-muted: #666;
+    --text-color-disabled: #999;
+    
+    --transition-default: all 0.2s ease;
+    --border-radius: 4px;
+    --padding-small: 2px 2px;
+    --padding-container: 1px 2px;
+    
+    /* 🎨 ヘッダー色定義（既存の色を保護） */
+    --header-seat: #27ae60;     /* 緑 - SEAT台帳 */
+    --header-pc: #3498db;       /* 青 - PC台帳 */
+    --header-ext: #e74c3c;      /* 赤 - EXT台帳 */
+    --header-user: #f39c12;     /* オレンジ - USER台帳 */
+    --header-common: #34495e;   /* ダークグレー - 共通フィールド */
+    
+    /* 🎨 ボタン色（編集モード切り替えボタンなど） */
+    --btn-search: #4CAF50;      /* 検索ボタン */
+    --btn-append: #2196F3;      /* 追加検索ボタン */
+    --btn-clear: #f44336;       /* クリアボタン */
+    --btn-edit-view: #9C27B0;   /* 編集モードボタン（閲覧時） */
+    --btn-edit-active: #FF9800; /* 編集モードボタン（編集時） */
+}
+
+/* =============================================================================
+   🔗 分離ボタン・主キー関連
+   ============================================================================= */
+.separate-btn {
+    background-color: var(--bg-white);
+    border: 1px solid var(--border-color-default);
+    border-radius: var(--border-radius);
+    padding: var(--padding-small);
+    font-size: 10px;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    margin-left: auto;
+    transition: var(--transition-default);
+    white-space: nowrap;
+    position: relative;
+    min-width: 24px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* 無効化された分離ボタン */
+.separate-btn:disabled {
+    background-color: var(--bg-disabled) !important;
+    color: var(--text-color-disabled) !important; 
+    border-color: var(--border-color-default) !important;
+    cursor: not-allowed !important;
+    opacity: 0.3 !important;
+    pointer-events: none !important;
+}
+
+.separate-btn:hover:not(:disabled) {
+    background-color: var(--bg-hover);
+    border-color: var(--border-color-hover);
+}
+
+.separate-btn:active {
+    transform: scale(0.95);
+    background-color: var(--bg-orange-lighter);
+}
+
+.separate-btn:focus {
+    outline: 2px solid var(--border-color-orange);
+    outline-offset: 1px;
+}
+
+/* .primary-key-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 22px;
+    padding: var(--padding-container);
+    box-sizing: border-box;
+} */
+
+.primary-key-value {
+    flex-grow: 1;
+    margin-right: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px;
+    line-height: 18px;
+}
+
+td[data-is-primary-key="true"] > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 100%;
+}
+
+td[data-is-primary-key="true"] > div > span {
+    flex-grow: 1;
+    margin-right: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =============================================================================
+   🔒 閲覧モード（編集機能無効化）
+   ============================================================================= */
+/* 閲覧モード時の基本設定は個別セレクターで定義 */
+
+/* .view-mode-active table {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+} */
+
+/* テキスト選択可能なセル */
+.view-mode-active td[data-field-code] {
+    pointer-events: auto !important;
+    cursor: text !important;
+    user-select: text !important;
+}
+
+.view-mode-active td[data-field-code] * {
+    pointer-events: none !important;
+}
+
+/* 有効化する要素（検索・フィルター・ページネーション） */
+.view-mode-active .ledger-search-buttons,
+.view-mode-active .ledger-search-buttons *,
+.view-mode-active #ledger-button-area,
+.view-mode-active #ledger-button-area *,
+.view-mode-active .pagination-container,
+.view-mode-active .pagination-container * {
+    pointer-events: auto !important;
+}
+
+/* 検索・フィルター入力要素 */
+.view-mode-active .filter-input,
+.view-mode-active #my-filter-row input,
+.view-mode-active #my-filter-row select,
+.view-mode-active #my-filter-row textarea,
+.view-mode-active .ledger-search-buttons input,
+.view-mode-active .pagination-container input,
+.view-mode-active #page-jump-input {
+    pointer-events: auto !important;
+    cursor: text !important;
+    background-color: var(--bg-white) !important;
+    border: 1px solid #ced4da !important;
+    outline: none !important;
+}
+
+/* .view-mode-active .filter-input:focus,
+.view-mode-active #my-filter-row input:focus,
+.view-mode-active #my-filter-row select:focus,
+.view-mode-active #page-jump-input:focus {
+    border-color: var(--border-color-blue) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(52,152,219,0.2) !important;
+} */
+
+/* 無効化要素群 */
+.view-mode-active td[draggable="true"] {
+    cursor: default !important;
+    pointer-events: auto !important;
+}
+
+/* .view-mode-active td[draggable="true"]:hover,
+.view-mode-active td.draggable-cell:hover::after {
+    background-color: inherit !important;
+    transform: none !important;
+    display: none !important;
+} */
+
+.view-mode-active .separate-btn {
+    display: none !important;
+}
+
+/* .view-mode-active td[tabindex]:focus,
+.view-mode-active td.cell-selected {
+    outline: none !important;
+    background-color: inherit !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+} */
+
+.view-mode-active td.cell-selected::after {
+    display: none !important;
+}
+
+/* テーブル内編集要素無効化 */
+/* 
+.view-mode-active .cell-editable input,
+.view-mode-active .cell-editable select,
+.view-mode-active .cell-editable textarea
+*/
+.view-mode-active td[data-field-code] input,
+.view-mode-active td[data-field-code] select,
+.view-mode-active td[data-field-code] textarea {
+    pointer-events: none !important;
+    cursor: default !important;
+    font-size: 11px !important;
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
+}
+
+/* アニメーション無効化（TR要素のホバー効果は除外） */
+.view-mode-active *:not(tr):not(tr:hover) {
+    transition: none !important;
+    animation: none !important;
+}
+
+.view-mode-active td[data-is-primary-key="true"] {
+    cursor: text !important;
+}
+
+.view-mode-active td[data-is-primary-key="true"]:hover::before {
+    display: none !important;
+}
+
+/* =============================================================================
+   ✅ 編集モード（編集機能有効化）
+   ============================================================================= */
+
+.edit-mode-active .cell-editable {
+    cursor: pointer !important;
+    transition: border-color 0.2s ease, background-color 0.2s ease !important;
+}
+
+/* .edit-mode-active .cell-editable:hover {
+    border-color: var(--border-color-default) !important;
+    background-color: var(--bg-light-gray) !important;
+} */
+
+/* ドラッグ&ドロップ */
+.edit-mode-active td.draggable-cell {
+    cursor: grab !important;
+}
+
+/* .edit-mode-active td.draggable-cell:hover {
+    background-color: var(--bg-blue-light) !important;
+} */
+
+.edit-mode-active td.draggable-cell:active {
+    cursor: grabbing !important;
+}
+
+/* 分離ボタン */
+.edit-mode-active .separate-btn {
+    cursor: pointer !important;
+    transition: var(--transition-default) !important;
+}
+
+.edit-mode-active .separate-btn:hover {
+    background-color: var(--bg-orange-light) !important;
+    border-color: var(--border-color-orange) !important;
+    transform: scale(1.05) !important;
+}
+
+/* フォーカス・選択 */
+.edit-mode-active td[tabindex]:focus {
+    outline: 2px solid var(--border-color-focus) !important;
+    outline-offset: -2px !important;
+}
+
+.edit-mode-active td.cell-selected {
+    border: 1px solid var(--border-color-selected) !important;
+    box-shadow: inset 0 0 0 1px var(--border-color-selected) !important;
+}
+
+/* テーブル内入力要素統一スタイル */
+/*
+.edit-mode-active .cell-editable input,
+.edit-mode-active .cell-editable select,
+.edit-mode-active .cell-editable textarea {
+*/    
+.edit-mode-active td[data-field-code] input,
+.edit-mode-active td[data-field-code] select,
+.edit-mode-active td[data-field-code] textarea {
+    background-color: var(--bg-white) !important;
+    border: 1px solid var(--border-color-default) !important;
+    border-radius: var(--border-radius) !important;
+    padding: var(--padding-small) !important;
+    font-size: 11px !important;
+    color: var(--text-color-default) !important;
+    transition: var(--transition-default) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-height: 20px !important;
+}
+
+/* .edit-mode-active td[data-field-code] input:hover,
+.edit-mode-active td[data-field-code] select:hover,
+.edit-mode-active td[data-field-code] textarea:hover {
+    border-color: var(--border-color-hover) !important;
+    background-color: var(--bg-light-gray) !important;
+} */
+
+/* .edit-mode-active td[data-field-code] input:focus,
+.edit-mode-active td[data-field-code] select:focus,
+.edit-mode-active td[data-field-code] textarea:focus {
+    outline: none !important;
+    border-color: var(--border-color-focus) !important;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
+    background-color: var(--bg-white) !important;
+} */
+
+/* =============================================================================
+   🎯 編集モード切り替えボタン・アニメーション
+   ============================================================================= */
+#edit-mode-toggle-btn {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: var(--transition-default);
+}
+
+#edit-mode-toggle-btn:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+#edit-mode-toggle-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+#edit-mode-toggle-btn:focus {
+    outline: 2px solid #007acc;
+    outline-offset: 2px;
+}
+
+.edit-mode-transition {
+    transition: all 0.3s ease-in-out !important;
+}
+
+@keyframes modeToggleSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.mode-toggle-success {
+    animation: modeToggleSuccess 0.3s ease-out;
+}
