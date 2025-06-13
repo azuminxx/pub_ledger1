@@ -5,6 +5,7 @@
         "js": [
             "v2/config.js",
             "v2/utils.js",
+            "v2/seat-map.js",
             "v2/background-process-monitor.js",
             "v2/core.js",
             "v2/modal-manager.js",
@@ -20,6 +21,7 @@
         ],
         "css": [
             "v2/table-base.css",
+            "v2/seat-map.css",
             "v2/table-theme.css",
             "v2/table-interaction.css",
             "v2/auto-filter.css",
