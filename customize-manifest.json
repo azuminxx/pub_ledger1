@@ -26,7 +26,8 @@
             "v2/table-pagination.css",
             "v2/table-components.css",
             "v2/modal-ui.css",
-            "v2/modal-add-record.css"
+            "v2/modal-add-record.css",
+            "v2/inconsistency.css"
         ]
     },
     "mobile": {
