@@ -385,16 +385,16 @@
          */
         _attachPaginationEvents(controlsDiv) {
             // ナビゲーションボタン
-            controlsDiv.querySelector('.first-page-btn').onclick = () => this._navigateToPage(() => this.paginationManager.goToFirstPage());
-            controlsDiv.querySelector('.prev-page-btn').onclick = () => this._navigateToPage(() => this.paginationManager.goToPreviousPage());
-            controlsDiv.querySelector('.next-page-btn').onclick = () => this._navigateToPage(() => this.paginationManager.goToNextPage());
-            controlsDiv.querySelector('.last-page-btn').onclick = () => this._navigateToPage(() => this.paginationManager.goToLastPage());
+            controlsDiv.querySelector('.first-page-btn').onclick = async () => await this._navigateToPage(() => this.paginationManager.goToFirstPage());
+            controlsDiv.querySelector('.prev-page-btn').onclick = async () => await this._navigateToPage(() => this.paginationManager.goToPreviousPage());
+            controlsDiv.querySelector('.next-page-btn').onclick = async () => await this._navigateToPage(() => this.paginationManager.goToNextPage());
+            controlsDiv.querySelector('.last-page-btn').onclick = async () => await this._navigateToPage(() => this.paginationManager.goToLastPage());
 
             // ページ番号ボタン
             controlsDiv.querySelectorAll('.page-number-btn').forEach(btn => {
-                btn.onclick = () => {
+                btn.onclick = async () => {
                     const pageNum = parseInt(btn.dataset.page);
-                    this._navigateToPage(() => this.paginationManager.goToPage(pageNum));
+                    await this._navigateToPage(() => this.paginationManager.goToPage(pageNum));
                 };
             });
 
@@ -402,14 +402,14 @@
             const jumpBtn = controlsDiv.querySelector('.page-jump-btn');
             const jumpInput = controlsDiv.querySelector('.page-jump-input');
             
-            jumpBtn.onclick = () => {
+            jumpBtn.onclick = async () => {
                 const pageNum = parseInt(jumpInput.value);
-                this._navigateToPage(() => this.paginationManager.goToPage(pageNum));
+                await this._navigateToPage(() => this.paginationManager.goToPage(pageNum));
             };
 
-            jumpInput.onkeypress = (e) => {
+            jumpInput.onkeypress = async (e) => {
                 if (e.key === 'Enter') {
-                    jumpBtn.click();
+                    await jumpBtn.click();
                 }
             };
         }
@@ -417,16 +417,245 @@
         /**
          * 🚀 ページ移動実行
          */
-        _navigateToPage(navigationFunction) {
-            if (navigationFunction()) {
-                // ページ移動成功 -> データ表示更新
-                this._displayCurrentPage();
-                
-                // UIを再作成して確実に表示を維持
+        async _navigateToPage(navigationFunction) {
+            try {
+                // 🆕 編集モード中のページ切り替え警告チェック（ページ切り替え前に実行）
+                if (await this._shouldWarnAboutEditData()) {
+                    const shouldProceed = await this._showEditDataWarning();
+                    if (!shouldProceed) {
+                        // ユーザーがキャンセルした場合は移動しない
+                        return;
+                    }
+                }
+
+                // 🆕 警告チェック後にボタンを無効化（連続クリック防止）
+                this._disablePaginationButtons();
+
+                // ページ移動実行
+                if (navigationFunction()) {
+                    // ページ移動成功 -> データ表示更新
+                    this._displayCurrentPage();
+                    
+                    // UIを再作成して確実に表示を維持
+                    setTimeout(() => {
+                        this.createPaginationUI();
+                    }, 50);
+                }
+            } finally {
+                // 🆕 処理完了後にボタンを再有効化
                 setTimeout(() => {
-                    this.createPaginationUI();
-                }, 50);
+                    this._enablePaginationButtons();
+                }, 100);
             }
+        }
+
+        /**
+         * 🔒 ページネーションボタンを無効化
+         */
+        _disablePaginationButtons() {
+            const buttons = document.querySelectorAll('.pagination-btn, .page-number-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                
+                // アクティブなページボタンは見た目を維持
+                if (btn.classList.contains('page-number-btn') && btn.classList.contains('active')) {
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'default';
+                } else {
+                    btn.style.opacity = '0.6';
+                    btn.style.cursor = 'not-allowed';
+                }
+            });
+        }
+
+        /**
+         * 🔓 ページネーションボタンを有効化
+         */
+        _enablePaginationButtons() {
+            const buttons = document.querySelectorAll('.pagination-btn, .page-number-btn');
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                
+                // アクティブなページボタンは無効化状態を維持
+                if (btn.classList.contains('page-number-btn') && btn.classList.contains('active')) {
+                    btn.disabled = true;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'default';
+                } else {
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
+            });
+        }
+
+        /**
+         * 🚨 編集データ警告が必要かチェック
+         */
+        async _shouldWarnAboutEditData() {
+            // 編集モードでない場合は警告不要
+            if (!window.editModeManager || !window.editModeManager.isEditMode) {
+                return false;
+            }
+            
+            // 現在のページに編集データがあるかチェック
+            const hasEditData = this._hasEditDataOnCurrentPage();
+            
+            return hasEditData;
+        }
+
+        /**
+         * 📝 現在のページに編集データがあるかチェック
+         */
+        _hasEditDataOnCurrentPage() {
+            const tbody = document.getElementById('my-tbody');
+            if (!tbody) {
+                return false;
+            }
+
+            // チェックされた修正チェックボックスがあるかチェック
+            const checkedBoxes = tbody.querySelectorAll('.modification-checkbox:checked');
+            return checkedBoxes.length > 0;
+        }
+
+
+
+        /**
+         * ⚠️ 編集データ警告ダイアログを表示
+         */
+        async _showEditDataWarning() {
+            // 現在のページ番号を保存（キャンセル時の復元用）
+            const currentPage = this.paginationManager.currentPage;
+            
+            return new Promise((resolve) => {
+                // モーダルダイアログを作成
+                const modal = document.createElement('div');
+                modal.className = 'edit-data-warning-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                `;
+
+                const dialog = document.createElement('div');
+                dialog.className = 'edit-data-warning-dialog';
+                dialog.style.cssText = `
+                    background: white;
+                    border-radius: 8px;
+                    padding: 24px;
+                    max-width: 500px;
+                    width: 90%;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    text-align: center;
+                `;
+
+                dialog.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 48px; color: #ff9800; margin-bottom: 16px;">⚠️</div>
+                        <h3 style="margin: 0 0 12px 0; color: #333; font-size: 18px;">編集データの警告</h3>
+                        <p style="margin: 0; color: #666; line-height: 1.5;">
+                            現在のページで編集中のデータがあります。<br>
+                            ページを切り替えると、編集した内容が消えてしまいますがよろしいですか？
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button class="cancel-btn" style="
+                            padding: 10px 20px;
+                            border: 1px solid #ccc;
+                            background: white;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">キャンセル</button>
+                        <button class="proceed-btn" style="
+                            padding: 10px 20px;
+                            border: 1px solid #ff9800;
+                            background: #ff9800;
+                            color: white;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">続行する</button>
+                    </div>
+                `;
+
+                modal.appendChild(dialog);
+                document.body.appendChild(modal);
+
+                // ボタンイベント設定
+                const cancelBtn = dialog.querySelector('.cancel-btn');
+                const proceedBtn = dialog.querySelector('.proceed-btn');
+
+                const cleanup = () => {
+                    document.body.removeChild(modal);
+                };
+
+                // アクティブページ状態を復元する関数
+                const restoreActivePageState = () => {
+                    // 現在のページに対応するボタンを探してactiveクラスを設定
+                    const pageButtons = document.querySelectorAll('.page-number-btn');
+                    pageButtons.forEach(btn => {
+                        const pageNum = parseInt(btn.dataset.page);
+                        if (pageNum === currentPage) {
+                            btn.classList.add('active');
+                            btn.disabled = true;
+                            btn.style.opacity = '1';
+                            btn.style.cursor = 'default';
+                        } else {
+                            btn.classList.remove('active');
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                            btn.style.cursor = 'pointer';
+                        }
+                    });
+                };
+
+                cancelBtn.onclick = () => {
+                    cleanup();
+                    // キャンセル時は現在のページ状態を復元
+                    setTimeout(() => {
+                        restoreActivePageState();
+                    }, 10);
+                    resolve(false); // キャンセル
+                };
+
+                proceedBtn.onclick = () => {
+                    cleanup();
+                    resolve(true); // 続行
+                };
+
+                // ESCキーでキャンセル
+                const handleKeydown = (e) => {
+                    if (e.key === 'Escape') {
+                        cleanup();
+                        document.removeEventListener('keydown', handleKeydown);
+                        // ESCキー時も現在のページ状態を復元
+                        setTimeout(() => {
+                            restoreActivePageState();
+                        }, 10);
+                        resolve(false);
+                    }
+                };
+                document.addEventListener('keydown', handleKeydown);
+
+                // モーダル背景クリックでキャンセル
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        cleanup();
+                        // 背景クリック時も現在のページ状態を復元
+                        setTimeout(() => {
+                            restoreActivePageState();
+                        }, 10);
+                        resolve(false);
+                    }
+                };
+            });
         }
 
         /**

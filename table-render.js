@@ -168,6 +168,9 @@
                     this._setMaxRowNumberFromDisplayedData();
                 }
 
+                // 📊 不整合統計情報を表示（テーブルの上）
+                this._displayInconsistencyStatistics(recordsToDisplay);
+
                 // ページングUIの作成/更新
                 if (shouldCreatePagination && window.paginationUI) {
                     setTimeout(() => {
@@ -209,43 +212,151 @@
             }
         }
 
-
-
         /**
          * テーブル行を作成
          */
         _createTableRow(record, fieldOrder, targetAppId, rowIndex = 0, baseRowNumber = 0) {
             const row = document.createElement('tr');
-            const integrationKey = record.integrationKey || '';
             
-            // 実際の行番号を計算（ページング環境対応）
-            let actualRowNumber;
-            if (window.paginationManager && window.paginationManager.allData.length > 100 && !window.dataManager.appendMode) {
-                const paginationInfo = window.paginationManager.getPaginationInfo();
-                actualRowNumber = paginationInfo.startRecord + rowIndex;
-            } else if (window.dataManager?.appendMode) {
-                // 追加モードでは DataManagerの基準値にindexを加算
-                actualRowNumber = baseRowNumber + rowIndex + 1;
-            } else {
-                actualRowNumber = rowIndex + 1;
-            }
+            // 行番号を設定（ページング対応）
+            const actualRowNumber = window.dataManager?.appendMode ? 
+                window.dataManager.getNextRowNumber() : 
+                baseRowNumber + rowIndex + 1;
             
-            // data-row-idには実際の行番号を設定（表示行番号ではない）
             row.setAttribute('data-row-id', actualRowNumber);
-            row.setAttribute('data-integration-key', integrationKey);
+            row.setAttribute('data-integration-key', record.integrationKey);
 
-            // 行番号はfieldsConfigの_row_numberで処理されるため、自動追加は無効化
+            // 🔧 台帳間不整合の検知と表示
+            const inconsistencyInfo = this._detectLedgerInconsistency(record);
+            if (inconsistencyInfo.hasInconsistency) {
+                row.classList.add('ledger-inconsistent');
+                row.setAttribute('data-inconsistency-info', JSON.stringify(inconsistencyInfo));
+                
+                // 不整合情報をツールチップとして表示
+                const tooltip = this._createInconsistencyTooltip(inconsistencyInfo);
+                row.title = tooltip;
+            }
 
-            // データセル作成
-            fieldOrder.forEach(fieldCode => {
+            // フィールド順序に従ってセルを作成
+            fieldOrder.forEach((fieldCode, index) => {
                 const cell = this._createDataCell(record, fieldCode, row, rowIndex);
+                
+                // 🔧 不整合がある場合、関連するセルにマーキング
+                if (inconsistencyInfo.hasInconsistency) {
+                    const field = window.fieldsConfig.find(f => f.fieldCode === fieldCode);
+                    if (field && field.isPrimaryKey) {
+                        const inconsistentApps = inconsistencyInfo.inconsistentFields[fieldCode];
+                        if (inconsistentApps && inconsistentApps.length > 0) {
+                            cell.classList.add('field-inconsistent');
+                            cell.setAttribute('data-inconsistent-apps', inconsistentApps.join(','));
+                        }
+                    }
+                }
+                
                 row.appendChild(cell);
             });
 
-            // 主キーが紐づいていない台帳フィールドにクラスを付与
+            // 台帳リンクなしスタイルを適用
             this._applyUnlinkedLedgerStyles(row, record);
 
             return row;
+        }
+
+        /**
+         * 台帳間の不整合を検知
+         */
+        _detectLedgerInconsistency(record) {
+            const inconsistencyInfo = {
+                hasInconsistency: false,
+                inconsistentFields: {},
+                ledgerCombinations: {},
+                summary: ''
+            };
+
+            if (!record.ledgerData) {
+                return inconsistencyInfo;
+            }
+
+            // 各台帳の主キー組み合わせを取得
+            const ledgerCombinations = {};
+            const primaryKeyFields = window.LedgerV2.Utils.FieldValueProcessor.getAllPrimaryKeyFields();
+            
+            Object.keys(record.ledgerData).forEach(appType => {
+                const ledgerRecord = record.ledgerData[appType];
+                if (ledgerRecord) {
+                    const combination = {};
+                    primaryKeyFields.forEach(fieldCode => {
+                        if (ledgerRecord[fieldCode] && ledgerRecord[fieldCode].value) {
+                            combination[fieldCode] = ledgerRecord[fieldCode].value;
+                        }
+                    });
+                    ledgerCombinations[appType] = combination;
+                }
+            });
+
+            // 不整合をチェック
+            primaryKeyFields.forEach(fieldCode => {
+                const values = new Set();
+                const appsWithValue = [];
+                
+                Object.keys(ledgerCombinations).forEach(appType => {
+                    const value = ledgerCombinations[appType][fieldCode];
+                    if (value) {
+                        values.add(value);
+                        appsWithValue.push(appType);
+                    }
+                });
+
+                // 同じフィールドで異なる値がある場合は不整合
+                if (values.size > 1) {
+                    inconsistencyInfo.hasInconsistency = true;
+                    inconsistencyInfo.inconsistentFields[fieldCode] = appsWithValue;
+                }
+            });
+
+            inconsistencyInfo.ledgerCombinations = ledgerCombinations;
+            
+            if (inconsistencyInfo.hasInconsistency) {
+                inconsistencyInfo.summary = this._generateInconsistencySummary(ledgerCombinations, inconsistencyInfo.inconsistentFields);
+            }
+
+            return inconsistencyInfo;
+        }
+
+        /**
+         * 不整合情報のサマリーを生成
+         */
+        _generateInconsistencySummary(ledgerCombinations, inconsistentFields) {
+            let summary = '🚨 台帳間不整合検出:\n\n';
+            
+            Object.keys(ledgerCombinations).forEach(appType => {
+                const combination = ledgerCombinations[appType];
+                const ledgerName = window.LedgerV2.Utils.FieldValueProcessor.getLedgerNameByApp(appType);
+                
+                summary += `【${ledgerName}】\n`;
+                Object.keys(combination).forEach(fieldCode => {
+                    const field = window.fieldsConfig.find(f => f.fieldCode === fieldCode);
+                    const fieldLabel = field ? field.label : fieldCode;
+                    summary += `  ${fieldLabel}: ${combination[fieldCode]}\n`;
+                });
+                summary += '\n';
+            });
+
+            summary += '不整合フィールド:\n';
+            Object.keys(inconsistentFields).forEach(fieldCode => {
+                const field = window.fieldsConfig.find(f => f.fieldCode === fieldCode);
+                const fieldLabel = field ? field.label : fieldCode;
+                summary += `  • ${fieldLabel}\n`;
+            });
+
+            return summary;
+        }
+
+        /**
+         * 不整合情報のツールチップを作成
+         */
+        _createInconsistencyTooltip(inconsistencyInfo) {
+            return inconsistencyInfo.summary;
         }
 
         /**
@@ -292,6 +403,9 @@
                     break;
                 case 'modification_checkbox':
                     this._createModificationCheckboxCell(cell, row);
+                    break;
+                case 'ledger_inconsistency':
+                    this._createLedgerInconsistencyCell(cell, record, row);
                     break;
                 case 'link':
                     this._createLinkCell(cell, value, record, field);
@@ -364,6 +478,43 @@
         }
 
         /**
+         * 台帳不整合表示セルを作成
+         */
+        _createLedgerInconsistencyCell(cell, record, row) {
+            cell.classList.add('ledger-inconsistency-cell', 'table-cell');
+            
+            // 不整合を検知
+            const inconsistencies = this._detectLedgerInconsistencies(record);
+            
+            if (inconsistencies.length > 0) {
+                // 不整合がある場合 - セルのテキストコンテンツを設定
+                cell.textContent = '不整合';
+                cell.style.cursor = 'pointer';
+                cell.title = '台帳間で不整合があります（クリックで詳細表示）';
+                
+                // CSSクラスでアイコン表示を制御
+                cell.classList.add('inconsistency-warning');
+                
+                // クリックで詳細表示
+                cell.addEventListener('click', () => {
+                    this._showInconsistencyDetails(inconsistencies, record);
+                });
+                
+                // 行全体に不整合スタイルを適用
+                if (row) {
+                    row.classList.add('row-inconsistent');
+                }
+            } else {
+                // 不整合がない場合 - セルのテキストコンテンツを設定
+                cell.textContent = '正常';
+                cell.title = '台帳間で整合性が取れています';
+                
+                // CSSクラスでアイコン表示を制御
+                cell.classList.add('inconsistency-ok');
+            }
+        }
+
+        /**
          * リンクセルを作成
          */
         _createLinkCell(cell, value, record, field) {
@@ -417,7 +568,18 @@
             const select = document.createElement('select');
             select.style.width = '100%';
             select.style.border = 'none';
-            select.style.background = 'transparent';
+            select.style.background = 'white';
+            select.style.color = '#333';
+            select.style.fontSize = '11px';
+
+            // 🔧 値の優先順位：引数のvalue → data-original-value → 空文字
+            let actualValue = value;
+            if (!actualValue) {
+                const originalValue = cell.getAttribute('data-original-value');
+                if (originalValue) {
+                    actualValue = originalValue;
+                }
+            }
 
             // 空のオプション
             const emptyOption = document.createElement('option');
@@ -435,14 +597,14 @@
                     
                     optionElement.value = optionValue;
                     optionElement.textContent = optionLabel;
-                    if (optionValue === value) {
+                    if (optionValue === actualValue) {
                         optionElement.selected = true;
                     }
                     select.appendChild(optionElement);
                 });
             }
 
-            select.value = value || '';
+            select.value = actualValue || '';
 
             // 🔧 select要素の値変更時イベントハンドラを設定
             this._attachCellModificationListeners(select, cell, row);
@@ -604,6 +766,341 @@
         }
 
         /**
+         * 台帳間の不整合を検知
+         */
+        _detectLedgerInconsistencies(record) {
+            const inconsistencies = [];
+            
+            if (!record || !record.ledgerData) {
+                return inconsistencies;
+            }
+
+            // 主キーフィールドのマッピングを取得
+            const primaryKeyMapping = window.LedgerV2.Utils.FieldValueProcessor.getAppToPrimaryKeyMapping();
+            const ledgerTypes = ['SEAT', 'PC', 'EXT', 'USER'];
+            
+            // 各台帳の主キー値を収集
+            const ledgerPrimaryKeys = {};
+            ledgerTypes.forEach(ledgerType => {
+                if (record.ledgerData[ledgerType]) {
+                    const keys = {};
+                    Object.entries(primaryKeyMapping).forEach(([app, fieldCode]) => {
+                        const fieldData = record.ledgerData[ledgerType][fieldCode];
+                        if (fieldData && fieldData.value) {
+                            keys[app] = fieldData.value;
+                        }
+                    });
+                    ledgerPrimaryKeys[ledgerType] = keys;
+                }
+            });
+
+            // 不整合をチェック
+            const allLedgers = Object.keys(ledgerPrimaryKeys);
+            if (allLedgers.length <= 1) {
+                return inconsistencies; // 1つ以下の台帳しかない場合は不整合なし
+            }
+
+            // 基準となる台帳（最初の台帳）
+            const baseLedger = allLedgers[0];
+            const baseKeys = ledgerPrimaryKeys[baseLedger];
+
+            // 他の台帳と比較
+            for (let i = 1; i < allLedgers.length; i++) {
+                const compareLedger = allLedgers[i];
+                const compareKeys = ledgerPrimaryKeys[compareLedger];
+
+                // 各主キーを比較
+                Object.entries(primaryKeyMapping).forEach(([app, fieldCode]) => {
+                    const baseValue = baseKeys[app];
+                    const compareValue = compareKeys[app];
+
+                    // 両方に値があり、かつ異なる場合は不整合
+                    if (baseValue && compareValue && baseValue !== compareValue) {
+                        inconsistencies.push({
+                            fieldCode: fieldCode,
+                            app: app,
+                            baseLedger: baseLedger,
+                            baseValue: baseValue,
+                            compareLedger: compareLedger,
+                            compareValue: compareValue
+                        });
+                    }
+                });
+            }
+
+            return inconsistencies;
+        }
+
+        /**
+         * 不整合詳細を表示
+         */
+        _showInconsistencyDetails(inconsistencies, record) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                border-radius: 8px;
+                max-width: 1200px;
+                max-height: 90vh;
+                width: 90%;
+                height: 80vh;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                display: flex;
+                overflow: hidden;
+            `;
+
+            // 左側パネル（詳細情報）
+            const leftPanel = document.createElement('div');
+            leftPanel.style.cssText = `
+                flex: 1;
+                padding: 20px;
+                overflow-y: auto;
+                border-right: 1px solid #e0e0e0;
+            `;
+
+            // 右側パネル（インラインフレーム）
+            const rightPanel = document.createElement('div');
+            rightPanel.style.cssText = `
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                background: #f5f5f5;
+            `;
+
+            let html = `
+                <h3 style="margin-top: 0; color: #d32f2f;">⚠️ 台帳間不整合の詳細</h3>
+                <p style="margin-bottom: 20px; color: #666;">以下の主キーで台帳間に不整合があります：</p>
+            `;
+
+            // 不整合の詳細を表示
+            inconsistencies.forEach(inc => {
+                const fieldLabel = window.fieldsConfig.find(f => f.fieldCode === inc.fieldCode)?.label || inc.fieldCode;
+                html += `
+                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ffcdd2; border-radius: 4px; background-color: #ffebee;">
+                        <strong>${fieldLabel}</strong><br>
+                        <span style="color: #1976d2;">${inc.baseLedger}台帳:</span> ${inc.baseValue}<br>
+                        <span style="color: #d32f2f;">${inc.compareLedger}台帳:</span> ${inc.compareValue}
+                    </div>
+                `;
+            });
+
+            // 全台帳の主キー一覧とリンクを表示
+            html += `<hr style="margin: 20px 0;">`;
+            html += `<h4>各台帳の詳細 (クリックで表示)</h4>`;
+            
+            if (record.ledgerData) {
+                const primaryKeyMapping = window.LedgerV2.Utils.FieldValueProcessor.getAppToPrimaryKeyMapping();
+                Object.entries(record.ledgerData).forEach(([ledgerType, ledgerRecord]) => {
+                    const recordIdField = `${ledgerType.toLowerCase()}_record_id`;
+                    const recordId = ledgerRecord.$id?.value || ledgerRecord.レコード番号?.value;
+                    
+                    html += `<div style="margin-bottom: 15px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; background: #f9f9f9;">`;
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">`;
+                    html += `<strong style="color: #1976d2;">${ledgerType}台帳</strong>`;
+                    
+                    if (recordId) {
+                        const appId = window.LedgerV2.Config.APP_IDS[ledgerType];
+                        const recordUrl = `/k/${appId}/show#record=${recordId}`;
+                        html += `
+                            <div>
+                                <button class="ledger-link-btn" data-url="${recordUrl}" data-ledger="${ledgerType}" 
+                                    style="padding: 4px 8px; margin-right: 5px; background: #1976d2; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    📱 フレーム表示
+                                </button>
+                                <button class="ledger-window-btn" data-url="${recordUrl}" data-ledger="${ledgerType}"
+                                    style="padding: 4px 8px; background: #4caf50; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    🔗 新しい窓
+                                </button>
+                            </div>
+                        `;
+                    }
+                    html += `</div>`;
+                    
+                    const keyValues = [];
+                    Object.entries(primaryKeyMapping).forEach(([app, fieldCode]) => {
+                        const fieldData = ledgerRecord[fieldCode];
+                        if (fieldData && fieldData.value) {
+                            const fieldLabel = window.fieldsConfig.find(f => f.fieldCode === fieldCode)?.label || fieldCode;
+                            keyValues.push(`${fieldLabel}=${fieldData.value}`);
+                        }
+                    });
+                    html += `<div style="font-size: 13px; color: #666;">${keyValues.join(', ') || '(データなし)'}</div>`;
+                    html += `</div>`;
+                });
+            }
+
+            html += `
+                <div style="text-align: right; margin-top: 20px;">
+                    <button id="close-inconsistency-modal" style="
+                        padding: 8px 16px;
+                        background-color: #1976d2;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">閉じる</button>
+                </div>
+            `;
+
+            leftPanel.innerHTML = html;
+
+            // 右側パネルの初期表示
+            rightPanel.innerHTML = `
+                <div style="padding: 20px; text-align: center; color: #666; display: flex; align-items: center; justify-content: center; height: 100%;">
+                    <div>
+                        <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
+                        <div>台帳リンクをクリックすると<br>ここに詳細が表示されます</div>
+                    </div>
+                </div>
+            `;
+
+            content.appendChild(leftPanel);
+            content.appendChild(rightPanel);
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+
+            // リンクボタンのイベントリスナー
+            modal.addEventListener('click', (e) => {
+                if (e.target.classList.contains('ledger-link-btn')) {
+                    const url = e.target.getAttribute('data-url');
+                    const ledgerType = e.target.getAttribute('data-ledger');
+                    this._showLedgerInFrame(rightPanel, url, ledgerType);
+                } else if (e.target.classList.contains('ledger-window-btn')) {
+                    const url = e.target.getAttribute('data-url');
+                    window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                }
+            });
+
+            // 閉じるボタンのイベント
+            document.getElementById('close-inconsistency-modal').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            // モーダル外クリックで閉じる
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        /**
+         * 台帳詳細をインラインフレームで表示
+         */
+        _showLedgerInFrame(rightPanel, url, ledgerType) {
+            rightPanel.innerHTML = `
+                <div style="padding: 10px; background: #1976d2; color: white; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: bold;">${ledgerType}台帳の詳細</span>
+                    <button id="close-frame-btn" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px;">✕</button>
+                </div>
+                <iframe src="${url}" style="width: 100%; height: calc(100% - 50px); border: none; background: white;"></iframe>
+            `;
+
+            // フレーム閉じるボタン
+            document.getElementById('close-frame-btn').addEventListener('click', () => {
+                rightPanel.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: #666; display: flex; align-items: center; justify-content: center; height: 100%;">
+                        <div>
+                            <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
+                            <div>台帳リンクをクリックすると<br>ここに詳細が表示されます</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        /**
+         * 不整合統計情報を表示
+         */
+        _displayInconsistencyStatistics(records) {
+            // 既存の統計情報を削除
+            const existingStats = document.getElementById('inconsistency-statistics');
+            if (existingStats) {
+                existingStats.remove();
+            }
+
+            // 🔧 全件数を取得（ページング対応）
+            let allRecords = records;
+            if (window.paginationManager && window.paginationManager.allData.length > 0) {
+                allRecords = window.paginationManager.allData;
+            }
+
+            // 統計情報を計算
+            let inconsistentCount = 0;
+            let consistentCount = 0;
+
+            allRecords.forEach(record => {
+                const inconsistencies = this._detectLedgerInconsistencies(record);
+                if (inconsistencies.length > 0) {
+                    inconsistentCount++;
+                } else {
+                    consistentCount++;
+                }
+            });
+
+            // 統計情報表示エリアを作成
+            const statsContainer = document.createElement('div');
+            statsContainer.id = 'inconsistency-statistics';
+            statsContainer.style.cssText = `
+                margin: 10px 0;
+                padding: 12px 16px;
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            `;
+
+            const totalCount = allRecords.length;
+            const inconsistentPercentage = totalCount > 0 ? ((inconsistentCount / totalCount) * 100).toFixed(1) : 0;
+            
+            // 🔧 ページング情報を追加表示
+            const currentPageInfo = window.paginationManager && window.paginationManager.allData.length > 100 
+                ? ` (現在${records.length}件表示中)` 
+                : '';
+
+            statsContainer.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="font-weight: 600; color: #495057; font-size: 14px;">
+                        📊 台帳整合性統計
+                    </div>
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #28a745; font-size: 16px;">✓</span>
+                            <span style="color: #28a745; font-weight: 500;">正常: ${consistentCount}件</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="color: #dc3545; font-size: 16px;">⚠️</span>
+                            <span style="color: #dc3545; font-weight: 500;">不整合: ${inconsistentCount}件</span>
+                        </div>
+                        <div style="color: #6c757d; font-size: 13px;">
+                            (全${totalCount}件中 ${inconsistentPercentage}%が不整合${currentPageInfo})
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // テーブルの上に挿入
+            const table = document.getElementById('my-table');
+            if (table && table.parentNode) {
+                table.parentNode.insertBefore(statsContainer, table);
+            }
+        }
+
+        /**
          * レコードURLを構築
          */
         _buildRecordUrl(record, field) {
@@ -713,12 +1210,7 @@
             }
 
             try {
-                // 既存のオートフィルタマネージャーがある場合はクリア
-                if (window.autoFilterManager) {
-                    window.autoFilterManager.clearAllFilters();
-                }
-
-                // 新しいオートフィルタマネージャーを作成
+                // 新しいオートフィルタマネージャーを作成（既存のクリアは行わない）
                 window.autoFilterManager = new window.LedgerV2.AutoFilter.AutoFilterManagerV2();
                 
                 // 短い遅延後に初期化（DOM構築完了を確実にするため）

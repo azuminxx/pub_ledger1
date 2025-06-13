@@ -254,7 +254,7 @@
                     input.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault(); // デフォルトの動作を防ぐ
-                            HeaderButtonManager.executeSearch();
+                            HeaderButtonManager.executeFilterRowSearch(); // フィルタ行専用検索に変更
                         }
                     });
                 });
@@ -639,6 +639,17 @@
                     return;
                 }
 
+                // 📊 統計情報をクリア
+                this._clearInconsistencyStatistics();
+
+                // フィルタ行での検索実行フラグを設定
+                window.isFilterRowSearchActive = true;
+
+                // オートフィルタをクリア（競合を防ぐため）
+                if (window.autoFilterManager && window.autoFilterManager.clearFiltersOnRowSearch) {
+                    window.autoFilterManager.clearFiltersOnRowSearch();
+                }
+
                 LoadingManager.show('検索中...');
 
                 // 通常検索（追加モードを無効化）
@@ -653,8 +664,20 @@
                 }
 
                 LoadingManager.hide();
+                
+                // フィルタ行での検索実行フラグをクリア
+                window.isFilterRowSearchActive = false;
+                
+                // オートフィルタを再初期化
+                setTimeout(() => {
+                    if (window.autoFilterManager) {
+                        window.autoFilterManager.initialize();
+                    }
+                }, 200);
             } catch (error) {
                 LoadingManager.hide();
+                // フィルタ行での検索実行フラグをクリア
+                window.isFilterRowSearchActive = false;
                 console.error('❌ 検索エラー:', error);
             }
         }
@@ -666,6 +689,14 @@
                 if (!this._validateSearchConditions()) {
                     this._showNoConditionError();
                     return;
+                }
+
+                // フィルタ行での検索実行フラグを設定
+                window.isFilterRowSearchActive = true;
+
+                // オートフィルタをクリア（競合を防ぐため）
+                if (window.autoFilterManager && window.autoFilterManager.clearFiltersOnRowSearch) {
+                    window.autoFilterManager.clearFiltersOnRowSearch();
                 }
 
                 LoadingManager.show('追加検索中...');
@@ -682,9 +713,63 @@
                 }
 
                 LoadingManager.hide();
+                
+                // フィルタ行での検索実行フラグをクリア
+                window.isFilterRowSearchActive = false;
+                
+                // オートフィルタを再初期化
+                setTimeout(() => {
+                    if (window.autoFilterManager) {
+                        window.autoFilterManager.initialize();
+                    }
+                }, 200);
             } catch (error) {
                 LoadingManager.hide();
+                // フィルタ行での検索実行フラグをクリア
+                window.isFilterRowSearchActive = false;
                 console.error('❌ 追加検索エラー:', error);
+            }
+        }
+
+        /**
+         * フィルタ行でのEnter検索（既存データを保持したまま追加検索）
+         */
+        static async executeFilterRowSearch() {
+            try {
+                
+                // 🚫 無条件検索チェック
+                if (!this._validateSearchConditions()) {
+                    this._showNoConditionError();
+                    return;
+                }
+
+                // 既存のテーブルデータがあるかチェック
+                const tbody = document.querySelector('#my-tbody');
+                const hasExistingData = tbody && tbody.querySelectorAll('tr[data-integration-key]').length > 0;
+
+                LoadingManager.show(hasExistingData ? '追加検索中...' : '検索中...');
+
+                if (hasExistingData) {
+                    // 既存データがある場合は追加モードを有効化
+                    window.dataManager.setAppendMode(true);
+                } else {
+                    // 既存データがない場合は新規検索
+                    window.dataManager.setAppendMode(false);
+                }
+
+                const result = await window.searchManager.executeSearch('manual', null);
+
+                if (result && result.integratedRecords) {
+                    // table-render.jsのTableDisplayManagerを使用
+                    const tableManager = new window.LedgerV2.TableRender.TableDisplayManager();
+                    tableManager.displayIntegratedData(result.integratedRecords);
+                }
+
+                LoadingManager.hide();
+                
+            } catch (error) {
+                LoadingManager.hide();
+                console.error('❌ フィルタ行検索エラー:', error);
             }
         }
 
@@ -698,6 +783,9 @@
             if (window.searchManager && window.searchManager.clearFilters) {
                 window.searchManager.clearFilters();
             }
+
+            // 📊 統計情報をクリア
+            this._clearInconsistencyStatistics();
 
             // 追加モードを無効化し、行番号をリセット
             window.dataManager.setAppendMode(false);
@@ -736,6 +824,16 @@
                 // 各行のデータを4つの台帳に分解
                 const ledgerDataSets = this._decomposeTo4Ledgers(checkedRows);
                 
+                // デバッグ用：更新対象台帳をログ出力
+                console.log('🔍 更新対象台帳の分析:', ledgerDataSets);
+                Object.entries(ledgerDataSets).forEach(([ledgerType, records]) => {
+                    if (records.length > 0) {
+                        console.log(`📝 ${ledgerType}台帳: ${records.length}件の更新対象`);
+                                          } else {
+                          console.log(`⏭️ ${ledgerType}台帳: 更新対象なし（スキップ）`);
+                     }
+                  });
+                
                 // kintone用のupsertボディを作成
                 const updateBodies = this._createUpdateBodies(ledgerDataSets);
                 
@@ -755,6 +853,8 @@
                 // 実際のAPI呼び出し
                 const updateResults = {};
                 let currentStep = 0;
+                
+                console.log(`🚀 API呼び出し開始: ${Object.keys(updateBodies).length}台帳中、実際に更新するのは${Object.values(updateBodies).filter(body => body.records.length > 0).length}台帳`);
                 
                 for (const [ledgerType, body] of Object.entries(updateBodies)) {
                     if (body.records.length > 0) {
@@ -880,7 +980,7 @@
             return textContent.replace(/✂️/g, '').trim();
         }
         
-        // 特定の台帳用のデータを抽出
+        // 特定の台帳用のデータを抽出（変更があった場合のみ）
         static _extractLedgerData(rowData, ledgerType) {
             const recordIdField = `${ledgerType.toLowerCase()}_record_id`;
             const recordIdValue = rowData.fields[recordIdField];
@@ -895,16 +995,22 @@
                 fields: {}
             };
             
-            // 全主キーは全台帳に含める（空文字でも更新）
+            let hasChanges = false;
+            
+            // 主キーフィールドの変更をチェック
             const primaryKeys = window.LedgerV2.Utils.FieldValueProcessor.getAllPrimaryKeyFields();
             primaryKeys.forEach(primaryKey => {
                 const fieldValue = rowData.fields[primaryKey];
                 if (fieldValue !== undefined) {
-                    ledgerRecord.fields[primaryKey] = fieldValue || ''; // 空文字も含める
+                    // 主キーが変更されている場合のみ追加
+                    if (this._isFieldModified(rowData.integrationKey, primaryKey)) {
+                        ledgerRecord.fields[primaryKey] = fieldValue || '';
+                        hasChanges = true;
+                    }
                 }
             });
             
-            // その台帳固有のフィールドを追加（主キーとxxx_record_idは除外）
+            // その台帳固有のフィールドの変更をチェック
             const ledgerSpecificFields = window.fieldsConfig.filter(field => 
                 field.sourceApp === ledgerType && 
                 !field.isPrimaryKey && 
@@ -915,16 +1021,34 @@
             ledgerSpecificFields.forEach(field => {
                 const fieldValue = rowData.fields[field.fieldCode];
                 if (fieldValue !== undefined) {
-                    ledgerRecord.fields[field.fieldCode] = fieldValue || ''; // 空文字も含める
+                    // 台帳固有フィールドが変更されている場合のみ追加
+                    if (this._isFieldModified(rowData.integrationKey, field.fieldCode)) {
+                        ledgerRecord.fields[field.fieldCode] = fieldValue || '';
+                        hasChanges = true;
+                    }
                 }
             });
             
-            // 主キーまたは台帳固有フィールドが存在する場合のみ返す
-            if (Object.keys(ledgerRecord.fields).length > 0) {
+            // 変更があった場合のみ返す
+            if (hasChanges && Object.keys(ledgerRecord.fields).length > 0) {
                 return ledgerRecord;
             }
             
             return null;
+        }
+        
+        // フィールドが変更されているかどうかを判定
+        static _isFieldModified(integrationKey, fieldCode) {
+            // 対象行を取得
+            const row = document.querySelector(`tr[data-integration-key="${integrationKey}"]`);
+            if (!row) return false;
+            
+            // 対象セルを取得
+            const cell = row.querySelector(`td[data-field-code="${fieldCode}"]`);
+            if (!cell) return false;
+            
+            // セルが変更されているかチェック（cell-modifiedクラスの有無で判定）
+            return cell.classList.contains('cell-modified');
         }
         
         // kintone用のupsertボディを作成
@@ -1016,6 +1140,14 @@
         // 台帳名を取得（モーダル用）
         static _getLedgerName(ledgerType) {
             return window.LedgerV2.Utils.FieldValueProcessor.getLedgerNameByApp(ledgerType);
+        }
+
+        // 📊 統計情報をクリア
+        static _clearInconsistencyStatistics() {
+            const existingStats = document.getElementById('inconsistency-statistics');
+            if (existingStats) {
+                existingStats.remove();
+            }
         }
 
         // 🚫 検索条件バリデーション

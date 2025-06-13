@@ -151,156 +151,59 @@
         async _applyEditModeToTableAsync() {
             document.body.classList.remove('view-mode-active');
             document.body.classList.add('edit-mode-active');
-            await this._redrawTableForEditMode();
+            
+            // テーブルを再描画せず、既存のテーブルに編集機能を適用
+            await this._enableEditModeOnExistingTable();
         }
-        async _redrawTableForEditMode() {
-            const currentData = this._getCurrentDisplayedData();
-            if (currentData && currentData.length > 0) {
-                this._updateTableWithCurrentData(currentData);
-                await this._initializeEditModeFeatures();
-            }
-        }
-        
 
-        _getCurrentDisplayedData() {
-            // 1. ページング環境の場合（paginationUIManager）
-            if (window.paginationUIManager && window.paginationUIManager.getAllData) {
-                const allData = window.paginationUIManager.getAllData();
-                const currentPage = window.paginationUIManager.getCurrentPage();
-                const pageSize = window.paginationUIManager.getPageSize();
-                
-                const startIndex = (currentPage - 1) * pageSize;
-                const endIndex = startIndex + pageSize;
-                return allData.slice(startIndex, endIndex);
-            }
-            
-            // 2. ページング環境の場合（paginationManager）
-            if (window.paginationManager && window.paginationManager.allData && window.paginationManager.allData.length > 100) {
-                return window.paginationManager.getCurrentPageData();
-            }
-            
-            // 3. 非ページング環境の場合、window.dataAllから推定
-            if (window.dataAll && Array.isArray(window.dataAll)) {
-                const tbody = document.querySelector('#my-tbody');
-                if (tbody) {
-                    const rows = tbody.querySelectorAll('tr[data-row-id]');
-                    return window.dataAll.slice(0, rows.length);
-                }
-            }
-            
-            // 4. TableDisplayManager.currentDataから取得
-            if (window.tableDisplayManager && window.tableDisplayManager.currentData && window.tableDisplayManager.currentData.length > 0) {
-                return window.tableDisplayManager.currentData;
-            }
-            
-            // 5. DataManager.currentDataから取得
-            if (window.dataManager && window.dataManager.currentData && window.dataManager.currentData.length > 0) {
-                return window.dataManager.currentData;
-            }
-            
-            // 6. DOM要素から再構築
-            const reconstructedData = this._reconstructDataFromDOM();
-            if (reconstructedData.length > 0) {
-                return reconstructedData;
-            }
-            
-            return [];
-        }
-        
-        // DOM要素からデータを再構築（データソース不整合時の緊急処理）
-        _reconstructDataFromDOM() {
+        async _enableEditModeOnExistingTable() {
             const tbody = document.querySelector('#my-tbody');
-            if (!tbody) return [];
+            if (!tbody) return;
             
             const rows = tbody.querySelectorAll('tr[data-row-id]');
-            const reconstructedData = [];
             
+            // 既存の行に編集機能を有効化
             rows.forEach(row => {
-                const record = {
-                    integrationKey: row.getAttribute('data-integration-key') || '',
-                    originalRowId: parseInt(row.getAttribute('data-row-id') || '0') || null
-                };
-                
-                // 各セルからデータを取得
-                const cells = row.querySelectorAll('td[data-field-code]');
-                cells.forEach(cell => {
-                    const fieldCode = cell.getAttribute('data-field-code');
-                    const sourceApp = cell.getAttribute('data-source-app');
-                    
-                    // セル値を取得（CellValueHelperまたは直接取得）
-                    let cellValue = '';
-                    if (window.CellValueHelper && window.CellValueHelper.getValue) {
-                        cellValue = window.CellValueHelper.getValue(cell);
-                    } else {
-                        // フォールバック
-                        const input = cell.querySelector('input, select, textarea');
-                        if (input) {
-                            cellValue = input.value;
-                        } else {
-                            cellValue = cell.textContent.trim();
-                        }
-                    }
-                    
-                    if (fieldCode && cellValue) {
-                        record[fieldCode] = cellValue;
-                    }
-                });
-                
-                reconstructedData.push(record);
+                this._enableRowInteraction(row);
             });
             
-            return reconstructedData;
+            // 編集モード機能を初期化
+            await this._initializeEditModeFeatures();
         }
-        
-        _updateTableWithCurrentData(currentData) {
-            if (window.paginationUIManager && window.paginationUIManager._updateTableWithPageData) {
-                window.paginationUIManager._updateTableWithPageData(currentData);
-            } else {
-                const tbody = document.getElementById('my-tbody');
-                if (!tbody) return;
 
-                tbody.innerHTML = '';
-
-                const fieldOrder = window.fieldsConfig ? 
-                    window.fieldsConfig.map(field => field.fieldCode) : 
-                    [];
-
-                currentData.forEach((record, index) => {
-                    const row = this._createTableRowForEditMode(record, fieldOrder, index);
-                    tbody.appendChild(row);
-                });
-            }
-        }
-        
-        _createTableRowForEditMode(record, fieldOrder, rowIndex) {
-            if (window.tableDisplayManager && window.tableDisplayManager._createTableRow) {
-                return window.tableDisplayManager._createTableRow(record, fieldOrder, null, rowIndex, 0);
-            }
-            
-            const row = document.createElement('tr');
-            const integrationKey = record.integrationKey || '';
-            const actualRowId = record.originalRowId;
-            
-            row.setAttribute('data-row-id', actualRowId);
-            row.setAttribute('data-integration-key', integrationKey);
-
-            fieldOrder.forEach(fieldCode => {
-                const cell = window.tableDisplayManager._createDataCell(record, fieldCode, row, rowIndex);
-                row.appendChild(cell);
-            });
-
-            return row;
+        async _redrawTableForEditMode() {
+            // 編集モード切り替え時はテーブルを再描画しない
+            // 既存のテーブルに編集機能を適用するのみ
+            await this._enableEditModeOnExistingTable();
         }
         
         async _initializeEditModeFeatures() {
+            // 🆕 ページング情報を保持
+            let currentPage = 1;
+            let paginationInfo = null;
+            
+            if (window.paginationUIManager) {
+                // 現在のページング状態を保存
+                currentPage = window.paginationUIManager.getCurrentPage();
+                paginationInfo = window.paginationUIManager.paginationManager.getPaginationInfo();
+            }
+            
             if (window.paginationUIManager && window.paginationUIManager._initializePageFeatures) {
                 await window.paginationUIManager._initializePageFeatures();
+                
+                // 🆕 ページング情報を復元
+                if (paginationInfo && paginationInfo.totalPages > 1) {
+                    // 現在のページに戻す
+                    window.paginationUIManager.paginationManager.goToPage(currentPage);
+                    // ページングUIを更新
+                    window.paginationUIManager.updatePaginationUI();
+                }
             } else {
                 if (window.autoFilterManager) {
                     window.autoFilterManager.initialize();
                 }
                 
-                // �� セル交換機能に編集モード変更を通知
+                // セル交換機能に編集モード変更を通知
                 if (window.LedgerV2?.TableInteract?.cellSwapManager?.initializeDragDrop) {
                     window.LedgerV2.TableInteract.cellSwapManager.initializeDragDrop();
                 }
@@ -309,6 +212,16 @@
         
         // 🆕 閲覧モード状態を全体に適用（非同期バッチ処理版）
         async _applyViewModeToTableAsync() {
+            // 🆕 ページング情報を保持
+            let currentPage = 1;
+            let paginationInfo = null;
+            
+            if (window.paginationUIManager) {
+                // 現在のページング状態を保存
+                currentPage = window.paginationUIManager.getCurrentPage();
+                paginationInfo = window.paginationUIManager.paginationManager.getPaginationInfo();
+            }
+            
             // bodyクラスを閲覧モードに設定
             document.body.classList.remove('edit-mode-active');
             document.body.classList.add('view-mode-active');
@@ -333,10 +246,28 @@
                 // UIの応答性を保つため次のフレームまで待機
                 await new Promise(resolve => requestAnimationFrame(resolve));
             }
+            
+            // 🆕 ページング情報を復元
+            if (window.paginationUIManager && paginationInfo && paginationInfo.totalPages > 1) {
+                // 現在のページに戻す
+                window.paginationUIManager.paginationManager.goToPage(currentPage);
+                // ページングUIを更新
+                window.paginationUIManager.updatePaginationUI();
+            }
         }
         
         // 🆕 閲覧モード状態を全体に適用
         _applyViewModeToTable() {
+            // 🆕 ページング情報を保持
+            let currentPage = 1;
+            let paginationInfo = null;
+            
+            if (window.paginationUIManager) {
+                // 現在のページング状態を保存
+                currentPage = window.paginationUIManager.getCurrentPage();
+                paginationInfo = window.paginationUIManager.paginationManager.getPaginationInfo();
+            }
+            
             // bodyクラスを閲覧モードに設定
             document.body.classList.remove('edit-mode-active');
             document.body.classList.add('view-mode-active');
@@ -348,6 +279,14 @@
             rows.forEach(row => {
                 this._disableRowInteraction(row);
             });
+            
+            // 🆕 ページング情報を復元
+            if (window.paginationUIManager && paginationInfo && paginationInfo.totalPages > 1) {
+                // 現在のページに戻す
+                window.paginationUIManager.paginationManager.goToPage(currentPage);
+                // ページングUIを更新
+                window.paginationUIManager.updatePaginationUI();
+            }
         }
         
 
@@ -995,6 +934,20 @@
                     const appData = record.ledgerData[appType];
                     if (appData && appData[fieldCode] && appData[fieldCode].value !== undefined) {
                         return appData[fieldCode].value;
+                    }
+                }
+            }
+
+            // 🔧 統合キーから主キーフィールドの値を抽出（レコードIDが空の場合の対応）
+            if (record.integrationKey) {
+                const field = window.fieldsConfig?.find(f => f.fieldCode === fieldCode);
+                if (field && field.isPrimaryKey && field.sourceApp) {
+                    const keyParts = record.integrationKey.split('|');
+                    for (const part of keyParts) {
+                        const [appType, value] = part.split(':');
+                        if (appType === field.sourceApp && value) {
+                            return value;
+                        }
                     }
                 }
             }

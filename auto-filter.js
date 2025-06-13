@@ -54,6 +54,11 @@
         initialize() {
             if (this.isInitialized) return;
             
+            // フィルタ行での検索実行中の場合は初期化をスキップ
+            if (window.isFilterRowSearchActive) {
+                return;
+            }
+            
             // キャッシュされた全レコードを取得
             this._loadCachedRecords();
             
@@ -125,7 +130,8 @@
             // 各フィールドの値を収集
             window.fieldsConfig.forEach((field, fieldIndex) => {
                 const fieldCode = field.fieldCode;
-                if (!fieldCode || fieldCode.startsWith('_')) return; // システムフィールドはスキップ
+                // 行番号、チェックボックス、非表示ボタンはスキップ、不整合フィールドは含める
+                if (!fieldCode || fieldCode === '_row_number' || fieldCode === '_modification_checkbox' || fieldCode === '_hide_button') return;
 
                 const values = new Set();
 
@@ -191,7 +197,7 @@
                 const fieldCode = filterInput.getAttribute('data-field-code');
                 const headerLabel = th.querySelector('.header-label')?.textContent?.trim() || '';
                 
-                // 行番号列やボタン列はスキップ
+                // 行番号列やボタン列はスキップ（不整合フィールドは含める）
                 if (!fieldCode || fieldCode === '_row_number' || fieldCode === '_modification_checkbox' || fieldCode === '_hide_button') {
                     return;
                 }
@@ -795,6 +801,11 @@
          * 列の一意な値を取得（全レコード対応）
          */
         _getUniqueColumnValues(columnIndex, fieldCode) {
+            // 不整合フィールドの場合は特別処理
+            if (fieldCode === '_ledger_inconsistency') {
+                return this._getInconsistencyValues();
+            }
+
             // 全レコードキャッシュから値を取得
             if (this.allRecordsCache.has(fieldCode)) {
                 return this.allRecordsCache.get(fieldCode);
@@ -831,6 +842,96 @@
                 // 文字列として比較
                 return a.localeCompare(b, 'ja');
             });
+        }
+
+        /**
+         * 不整合フィールドの値を取得
+         */
+        _getInconsistencyValues() {
+            // 全レコードから不整合状態を計算
+            if (!this.allRecords || this.allRecords.length === 0) {
+                return ['正常', '不整合'];
+            }
+
+            const values = new Set();
+            
+            this.allRecords.forEach(record => {
+                // 不整合検知ロジック（table-render.jsと同じ）
+                const inconsistencies = this._detectRecordInconsistencies(record);
+                if (inconsistencies.length > 0) {
+                    values.add('不整合');
+                } else {
+                    values.add('正常');
+                }
+            });
+
+            return Array.from(values).sort();
+        }
+
+        /**
+         * レコードの不整合を検知（table-render.jsのロジックを複製）
+         */
+        _detectRecordInconsistencies(record) {
+            const inconsistencies = [];
+            
+            if (!record || !record.ledgerData) {
+                return inconsistencies;
+            }
+
+            // 主キーフィールドのマッピングを取得
+            const primaryKeyMapping = window.LedgerV2.Utils.FieldValueProcessor.getAppToPrimaryKeyMapping();
+            const ledgerTypes = ['SEAT', 'PC', 'EXT', 'USER'];
+            
+            // 各台帳の主キー値を収集
+            const ledgerPrimaryKeys = {};
+            ledgerTypes.forEach(ledgerType => {
+                if (record.ledgerData[ledgerType]) {
+                    const keys = {};
+                    Object.entries(primaryKeyMapping).forEach(([app, fieldCode]) => {
+                        const fieldData = record.ledgerData[ledgerType][fieldCode];
+                        if (fieldData && fieldData.value) {
+                            keys[app] = fieldData.value;
+                        }
+                    });
+                    ledgerPrimaryKeys[ledgerType] = keys;
+                }
+            });
+
+            // 不整合をチェック
+            const allLedgers = Object.keys(ledgerPrimaryKeys);
+            if (allLedgers.length <= 1) {
+                return inconsistencies; // 1つ以下の台帳しかない場合は不整合なし
+            }
+
+            // 基準となる台帳（最初の台帳）
+            const baseLedger = allLedgers[0];
+            const baseKeys = ledgerPrimaryKeys[baseLedger];
+
+            // 他の台帳と比較
+            for (let i = 1; i < allLedgers.length; i++) {
+                const compareLedger = allLedgers[i];
+                const compareKeys = ledgerPrimaryKeys[compareLedger];
+
+                // 各主キーを比較
+                Object.entries(primaryKeyMapping).forEach(([app, fieldCode]) => {
+                    const baseValue = baseKeys[app];
+                    const compareValue = compareKeys[app];
+
+                    // 両方に値があり、かつ異なる場合は不整合
+                    if (baseValue && compareValue && baseValue !== compareValue) {
+                        inconsistencies.push({
+                            fieldCode: fieldCode,
+                            app: app,
+                            baseLedger: baseLedger,
+                            baseValue: baseValue,
+                            compareLedger: compareLedger,
+                            compareValue: compareValue
+                        });
+                    }
+                });
+            }
+
+            return inconsistencies;
         }
 
         /**
@@ -927,6 +1028,11 @@
          * フィルタを適用
          */
         _applyFilters() {
+            // フィルタ行での検索が実行中の場合は、オートフィルタを適用しない
+            if (window.isFilterRowSearchActive) {
+                return;
+            }
+            
             if (this.filters.size === 0) {
                 this._clearPaginationFilter();
                 this._updateFilterButtonStates();
@@ -1005,6 +1111,12 @@
          */
         _extractRecordValue(record, fieldCode) {
             if (!record || !fieldCode) return '';
+
+            // 不整合フィールドの特別処理
+            if (fieldCode === '_ledger_inconsistency') {
+                const inconsistencies = this._detectRecordInconsistencies(record);
+                return inconsistencies.length > 0 ? '不整合' : '正常';
+            }
 
             // 1. 統合レコードの場合（ledgerDataを持つ）
             if (record.ledgerData) {
@@ -1238,8 +1350,11 @@
                     window.paginationUI.updatePaginationUI();
                 }
                 
-                // 最初のページを表示
-                this._displayFilteredPage();
+                // フィルタ行検索実行中の場合は、テーブル再描画をスキップ
+                if (!window.isFilterRowSearchActive) {
+                    // 最初のページを表示
+                    this._displayFilteredPage();
+                }
             }
         }
 
@@ -1912,6 +2027,21 @@
             } catch (error) {
                 console.error('❌ セル交換機能再初期化エラー:', error);
             }
+        }
+
+        /**
+         * フィルタ行での検索実行時にオートフィルタをクリア
+         */
+        clearFiltersOnRowSearch() {
+            // 全てのフィルタをクリア
+            this.filters.clear();
+            this.tempFilters.clear();
+            
+            // フィルタボタンの状態を更新
+            this._updateFilterButtonStates();
+            
+            // ドロップダウンを閉じる
+            this._closeAllDropdowns();
         }
     }
 

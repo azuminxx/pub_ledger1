@@ -82,6 +82,22 @@
             showInModalPreview: false
         },
 
+        // 台帳不整合表示
+        {
+            fieldCode: '_ledger_inconsistency',
+            label: '⚠️',
+            width: '40px',
+            cellType: 'ledger_inconsistency',
+            updateMode: 'static',
+            category: '共通',
+            filterType: 'text',
+            searchOperator: 'like',
+            searchValueFormatter: 'prefix',
+            editableFrom: 'static',
+            isLedgerInconsistency: true,
+            showInModalPreview: false
+        },
+
         // 非表示ボタン
         {
             fieldCode: '_hide_button',
@@ -153,7 +169,43 @@
             sourceApp: 'PC',
             showInModalPreview: true
         },
-
+        {
+            fieldCode: 'test1',
+            label: '🎯 test1',
+            width: '100px',
+            cellType: 'dropdown',
+            updateMode: 'dynamic',
+            category: 'PC台帳',
+            options: [
+                { value: 'sample1', label: 'sample1' },
+                { value: 'sample2', label: 'sample2' },
+                { value: 'sample3', label: 'sample3' }
+            ],
+            filterType: 'dropdown',
+            searchOperator: 'in',
+            searchValueFormatter: 'list',
+            editableFrom: 'all',
+            sourceApp: 'PC',
+            showInModalPreview: true
+        },
+        {
+            fieldCode: 'sample',
+            label: '🎯 sample',
+            width: '100px',
+            cellType: 'dropdown',
+            updateMode: 'dynamic',
+            category: 'PC台帳',
+            options: [
+                { value: 'sample1', label: 'sample1' },
+                { value: 'sample2', label: 'sample2' }
+            ],
+            filterType: 'dropdown',
+            searchOperator: 'in',
+            searchValueFormatter: 'list',
+            editableFrom: 'all',
+            sourceApp: 'PC',
+            showInModalPreview: true
+        },
         // ユーザー台帳フィールド
         {
             fieldCode: 'user_record_id',

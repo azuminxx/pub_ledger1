@@ -628,10 +628,14 @@
             const firstStageResults = await this._executeFirstStageSearch(conditions);
 
             // 第2段階：関連検索（第1段階で取得した主キーを使って他の台帳を検索）
-            const secondStageResults = await this._executeSecondStageSearch(
-                firstStageResults,
-                primaryKeys
-            );
+            // 🚫 第2段階を無効化（コメントアウト）
+            // const secondStageResults = await this._executeSecondStageSearch(
+            //     firstStageResults,
+            //     primaryKeys
+            // );
+            
+            // 🔧 第2段階を無効化：空の結果を使用
+            const secondStageResults = { SEAT: [], PC: [], EXT: [], USER: [] };
 
             // 🔧 第3段階：統合キーベース検索（補完検索）
             const thirdStageResults = await this._executeThirdStageSearch(
@@ -889,17 +893,15 @@
             console.log(`🔍 第3段階：第1段階実行済み台帳を除外 - ${Array.from(this.firstStageExecutedApps || []).join(', ')}`);
 
             // 補完検索の実行（第1段階で実行済みの台帳は除外）
-            if (!this.firstStageExecutedApps || !this.firstStageExecutedApps.has("SEAT")) {
-            await this._executeSupplementarySearch(allIntegrationKeys, results, "SEAT", "座席番号");
-            }
-            if (!this.firstStageExecutedApps || !this.firstStageExecutedApps.has("PC")) {
-            await this._executeSupplementarySearch(allIntegrationKeys, results, "PC", "PC番号");
-            }
-            if (!this.firstStageExecutedApps || !this.firstStageExecutedApps.has("EXT")) {
-            await this._executeSupplementarySearch(allIntegrationKeys, results, "EXT", "内線番号");
-            }
-            if (!this.firstStageExecutedApps || !this.firstStageExecutedApps.has("USER")) {
-            await this._executeSupplementarySearch(allIntegrationKeys, results, "USER", "ユーザーID");
+            const appToPrimaryKeyMapping = window.LedgerV2.Utils.FieldValueProcessor.getAppToPrimaryKeyMapping();
+            
+            // 各台帳について補完検索を実行
+            for (const [appType, primaryKeyField] of Object.entries(appToPrimaryKeyMapping)) {
+                if (!this.firstStageExecutedApps || !this.firstStageExecutedApps.has(appType)) {
+                    if (primaryKeyField) {
+                        await this._executeSupplementarySearch(allIntegrationKeys, results, appType, primaryKeyField);
+                    }
+                }
             }
 
             return results;
@@ -973,24 +975,86 @@
         integrateData(allLedgerData) {
             const integratedData = new Map();
 
+            // 🔧 統合キーの正規化とマッチング用のヘルパー
+            const normalizeIntegrationKey = (keyParts) => {
+                // 主キーの順序を統一（SEAT, PC, EXT, USER）
+                const appOrder = ['SEAT', 'PC', 'EXT', 'USER'];
+                const sortedParts = [];
+                
+                appOrder.forEach(app => {
+                    const part = keyParts.find(p => p.startsWith(`${app}:`));
+                    if (part) {
+                        sortedParts.push(part);
+                    }
+                });
+                
+                return sortedParts.join('|');
+            };
+
+            // 🔧 部分キーマッチング用のマップ
+            const partialKeyMap = new Map(); // 部分キー -> 完全統合キー のマッピング
+
             // 各台帳のデータを統合キーでグループ化
             Object.keys(allLedgerData).forEach((appType) => {
                 const records = allLedgerData[appType] || [];
 
                 records.forEach((record) => {
-                    const integrationKey = this._extractIntegrationKey(record);
+                    const originalIntegrationKey = this._extractIntegrationKey(record);
+                    const keyParts = originalIntegrationKey.split('|');
+                    const normalizedKey = normalizeIntegrationKey(keyParts);
 
-                    if (!integratedData.has(integrationKey)) {
-                        integratedData.set(integrationKey, {
-                            integrationKey: integrationKey, // 統合キーを明示的に設定
-                            ledgerData: {},
-                            recordIds: {}
-                        });
+                    // 🔧 既存の統合レコードとのマッチングを試行
+                    let targetIntegrationKey = normalizedKey;
+                    let existingRecord = integratedData.get(targetIntegrationKey);
+
+                    // 完全マッチしない場合、部分マッチを試行
+                    if (!existingRecord) {
+                        for (const [existingKey, existingData] of integratedData.entries()) {
+                            const existingParts = existingKey.split('|');
+                            const newParts = keyParts;
+
+                            // 共通する主キーがあるかチェック
+                            let hasCommonKey = false;
+                            for (const newPart of newParts) {
+                                if (existingParts.includes(newPart)) {
+                                    hasCommonKey = true;
+                                    break;
+                                }
+                            }
+
+                            if (hasCommonKey) {
+                                // 既存のレコードに統合
+                                targetIntegrationKey = existingKey;
+                                existingRecord = existingData;
+                                
+                                // 統合キーを更新（新しい主キーを追加）
+                                const mergedParts = [...new Set([...existingParts, ...newParts])];
+                                const mergedKey = normalizeIntegrationKey(mergedParts);
+                                
+                                // 古いキーを削除し、新しいキーで再登録
+                                integratedData.delete(existingKey);
+                                targetIntegrationKey = mergedKey;
+                                existingRecord.integrationKey = mergedKey;
+                                break;
+                            }
+                        }
                     }
 
-                    const integratedRecord = integratedData.get(integrationKey);
-                    integratedRecord.ledgerData[appType] = record;
-                    integratedRecord.recordIds[appType] = record.$id.value;
+                    // 統合レコードが存在しない場合は新規作成
+                    if (!existingRecord) {
+                        existingRecord = {
+                            integrationKey: targetIntegrationKey,
+                            ledgerData: {},
+                            recordIds: {}
+                        };
+                    }
+
+                    // データを統合
+                    existingRecord.ledgerData[appType] = record;
+                    existingRecord.recordIds[appType] = record.$id.value;
+                    
+                    // マップに登録
+                    integratedData.set(targetIntegrationKey, existingRecord);
                 });
             });
 

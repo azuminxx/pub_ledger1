@@ -228,7 +228,6 @@
                 this._startMonitoring();
             }
             
-            console.log(`🔄 処理開始: ${type} (ID: ${processId})`);
             return processId;
         }
 
@@ -251,8 +250,6 @@
         endProcess(processId) {
             const processInfo = this.activeProcesses.get(processId);
             if (!processInfo) return;
-            
-            console.log(`✅ 処理完了: ${processInfo.type} (ID: ${processId})`);
             
             // UI要素を削除
             if (processInfo.element && processInfo.element.parentNode) {
